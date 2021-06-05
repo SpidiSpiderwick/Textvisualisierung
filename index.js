@@ -1,11 +1,6 @@
 /**
  * example function
  */
-function example_function() {
-
-    return;
-}
-
 function test() {
     var mymap = L.map('mapid').setView([46.54, 2.44], 6);
 
@@ -18,8 +13,42 @@ function test() {
         accessToken: 'your.mapbox.access.token'
     }).addTo(mymap);
 
+    L.circle([48.8, 2.3], 500, {
+        color: 'green',
+        fillColor: 'green',
+        fillOpacity: 0.5
+    }).addTo(mymap).bindPopup("I am a circle.");
+
+    var popup = L.popup();
+
     mymap.on('click', onMapClick);
+
+    function onMapClick(e) {
+        console.log(e.latlng)
+        popup.setLatLng(e.latlng) //Koordinate des Popups
+            .setContent("You clicked the map at " + e.latlng.toString()) //Inhalt des Popups
+            .openOn(mymap); //Ziel des Popups
+    }
 }
-function onMapClick(e) {
-    alert("You clicked the map at " + e.latlng);
+
+function loadFile(file){
+    let reader = new FileReader();
+    reader.readAsBinaryString(file); //liest die Datei als String ein
+    reader.onloadend = function(event){ //gibt an was passiert, wenn die Datei fertig geladen wurde
+        drawPoints(event.target.result);
+    }
 }
+
+/**
+ * We should preprocess the Data in Python, maybe store it via API on demand on my server, so we dont need to upload it on the Website
+ * @param data
+ */
+function drawPoints(data){
+    console.log(data)
+}
+
+
+
+
+
+

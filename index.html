@@ -8,6 +8,8 @@
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
             integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
             crossorigin=""></script>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://d3js.org/d3-dsv.v2.min.js"></script>
     <script src="index.js"></script>
     <title>Title</title>
 </head>
@@ -17,9 +19,22 @@
     <h1>Test</h1>
 </div>
 
+<input id="loadFile" type="file"/>
+
 <div id="mapid"></div>
 
 <script type="text/javascript">
     test();
 </script>
+
+<script type="text/javascript">
+    let input = document.getElementById("loadFile");
+    //einem EventListener wird auch eine callback-funktion übergeben.
+    input.addEventListener("change", function () {
+        loadFile(this.files[0]);
+        //this.files ist eine FileList von ausgewählten Files, wir sind in diesem Fall nur an dem ersten Eintrag interessiert.
+    });
+</script>
+
+
 </body>
