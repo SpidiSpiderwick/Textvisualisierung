@@ -10,6 +10,10 @@
             crossorigin=""></script>
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <script src="https://d3js.org/d3-dsv.v2.min.js"></script>
+
+    <script type="application/javascript" src="https://bathlamos.github.io/delaunay-triangulation/js/delaunay.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+
     <script src="index.js"></script>
     <title>Title</title>
 </head>
@@ -24,15 +28,24 @@
 <div id="mapid"></div>
 
 <script type="text/javascript">
-    test();
+    onLoadPage();
+
+    var points = [
+        [-1.5, 0],
+        [0, 1],
+        [0, 10]
+    ];
+
+    var delaunay = new Delaunay(points);
+    var tri = delaunay.triangulate();
+
+
 </script>
 
 <script type="text/javascript">
     let input = document.getElementById("loadFile");
-    //einem EventListener wird auch eine callback-funktion übergeben.
     input.addEventListener("change", function () {
         loadFile(this.files[0]);
-        //this.files ist eine FileList von ausgewählten Files, wir sind in diesem Fall nur an dem ersten Eintrag interessiert.
     });
 </script>
 
