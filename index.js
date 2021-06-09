@@ -51,6 +51,8 @@ function loadFile(file){
     reader.readAsBinaryString(file); //liest die Datei als String ein
     reader.onloadend = function(event){ //gibt an was passiert, wenn die Datei fertig geladen wurde
         data = JSON.parse(reader.result);
+        //so its faster for testting
+        data = data.slice(0,1000);
 
         data.forEach(createLatLng);
 
@@ -119,9 +121,6 @@ function updateView()
     g .attr("transform", "translate(" + (-topLeft.x+padding) + ","
         + (-topLeft.y+padding) + ")");
 
-    calcTrianguels();
-
-
 }
 
 function calculateDataBounds(features)
@@ -161,9 +160,89 @@ function calculateDataBounds(features)
 }
 
 function calcTrianguels() {
-    circles.selectAll("circle").each(function (d, i){
-        console.log(d);
+    queue = new TinyQueue([], function (a,b){
+        return b.abs -a.abs;
+    });
+    points = [];
+    temp = 0;
+    localr = circles.attr("r");
+    pointremove = false;
+    circles.each(function (d, i){
+        points.push([mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y]);
     })
+    points = points.slice(0,1000);
+    var delaunay = new Delaunay(points);
+    var tri = delaunay.triangulate();
+
+    for(i=1;i<tri.length;i=i+2){
+        //maybe work with deque, see lecture
+       temp = Math.sqrt(Math.pow(tri[i-1][0]-tri[i][0],2) + Math.pow(tri[i-1][1]-tri[i][1],2));
+       if((localr * 2) > temp){
+           queue.push({pts:[tri[i-1],tri[i]], abs:temp});
+       }
+    }
+    while(queue.peek() !== undefined){
+        temp = queue.pop();
+
+        console.log(
+            circles.select(function (d){
+            if(compareArray(temp.pts[0],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
+                return d;
+            }
+        }).attr("r")
+        );
+
+        point1r = circles.select(function (d){
+            if(compareArray(temp.pts[0],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
+                return d;
+            }
+        }).attr("r");
+
+        point2r = circles.select(function (d){
+            if(compareArray(temp.pts[2],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
+                return d;
+            }
+        }).attr("r");
+
+
+        if(point1r >= point2r){
+            newr = point1r + point2r;
+            circles.select(function (d){
+                if(compareArray(temp.pts[0],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
+                    return d;
+                }
+            }).attr("r", newr);
+            circles.select(function (d){
+                if(compareArray(temp.pts[1],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
+                    return d;
+                }
+            }).remove();
+        }
+    }
+    console.log("im Here")
+    updateView();
+    if(pointremove){
+        calcTrianguels();
+    }
+}
+
+function compareArray(x,y){
+    if(x == null){
+        return false;
+    }
+    if(y == null){
+        return false;
+    }
+    if(x.length !== y.length){
+        return false;
+    }
+    for(j = 0; j < x.length; j++){
+        if(x[j] !== y[j]){
+            return false;
+        }
+    }
+    return true;
+
 }
 
 

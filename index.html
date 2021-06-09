@@ -11,8 +11,12 @@
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <script src="https://d3js.org/d3-dsv.v2.min.js"></script>
 
+    <!-- for triangulation -->
     <script type="application/javascript" src="https://bathlamos.github.io/delaunay-triangulation/js/delaunay.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+
+    <!-- for priority queue -->
+    <script src="https://unpkg.com/tinyqueue@2.0.0/tinyqueue.min.js"></script>
 
     <script src="index.js"></script>
     <title>Title</title>
@@ -30,16 +34,16 @@
 <script type="text/javascript">
     onLoadPage();
 
-    var points = [
-        [-1.5, 0],
-        [0, 1],
-        [0, 10]
-    ];
+    mytuple = {point:[0,300],r:0.1};
+    mytuple2 = {point:[4,235],r:0.3};
+    mytuple3 = {point:[10,5], r:10};
+    console.log(mytuple.r);
 
-    var delaunay = new Delaunay(points);
-    var tri = delaunay.triangulate();
-
-
+    queue = new TinyQueue([], function (a,b){
+        return b.r -a.r;
+    });
+    queue.push(mytuple3);
+    console.log(queue.pop());
 </script>
 
 <script type="text/javascript">
@@ -48,6 +52,8 @@
         loadFile(this.files[0]);
     });
 </script>
+
+<button onclick="calcTrianguels()">Triangulation</button>
 
 
 </body>
