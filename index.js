@@ -9,9 +9,10 @@ var bounds;
 var padding = 200;
 var pointPositions = [];
 var circles;
+var radius = 3;
 var scaleSVG = true;
-var radius = 8;
 var opacity = 0.5;
+var zoomlevel;
 
 function onLoadPage(){
     initMap();
@@ -54,6 +55,7 @@ function loadFile(file){
         //so its faster for testting
         data = data.slice(0,1000);
 
+
         data.forEach(createLatLng);
 
         circles = g.selectAll("circle")
@@ -66,7 +68,7 @@ function loadFile(file){
             .on("mouseover", handleMouseOver)
             .on("mouseout", handleMouseOut)
             .on("click", chart);
-
+        zoomlevel = mymap.getZoom();
         updateView();
     }
 }
@@ -74,15 +76,15 @@ function loadFile(file){
 function handleMouseOver(d, i) {  // Add interactivity
 
     // Use D3 to select element, change color and size
-    console.log(d3.select(this));
     d3.select(this).style("fill", "orange");
+    console.log(d3.select(this).attr("r"));
     d3.select(this).attr("r", 50);
 }
 
 function handleMouseOut(d, i) {
     // Use D3 to select element, change color back to normal
     d3.select(this).style("fill", "red");
-    d3.select(this).attr("r",function(d) { return radius/1400*Math.pow(2,mymap.getZoom())});
+    d3.select(this).attr("r",function(d) { return d.r});
 
 }
 
@@ -90,6 +92,7 @@ function createLatLng(d)
 {
     d.LatLng = new L.LatLng(d.lat, d.long);
     d.data = [10,12,16,20,25,30,30,29,13,10,7,6];
+    d.r = radius;
 }
 
 function updatePosition(d)
@@ -101,12 +104,30 @@ function updatePosition(d)
 function updateView()
 {
     //clear old positions
+    circles = g.selectAll("circle").data(data);
+    circles.exit().remove();
     pointPositions = [];
     data.forEach(updatePosition);
 
     circles.attr("cx",function(d) { return mymap.latLngToLayerPoint(d.LatLng).x});
     circles.attr("cy",function(d) { return mymap.latLngToLayerPoint(d.LatLng).y});
-    if(scaleSVG) circles.attr("r",function(d) { return radius/1400*Math.pow(2,mymap.getZoom())});
+    circles.attr("r", function (d){ return d.r});
+    /*
+    if(zoomlevel>mymap.getZoom()){
+        data.forEach(function (d){
+            d.r = d.r - 1;
+        });
+        circles.attr("r",function(d) { return d.r});
+    }if (zoomlevel < mymap.getZoom()){
+    data.forEach(function (d){
+        d.r = d.r + 1;
+    });
+    circles.attr("r",function(d) { return d.r});
+    }else{
+
+    }
+
+     */
 
     bounds = calculateDataBounds(pointPositions);
 
@@ -120,6 +141,8 @@ function updateView()
 
     g .attr("transform", "translate(" + (-topLeft.x+padding) + ","
         + (-topLeft.y+padding) + ")");
+
+    zoomlevel = mymap.getZoom();
 
 }
 
@@ -159,6 +182,20 @@ function calculateDataBounds(features)
     return bounds;
 }
 
+function calcTri(){
+    points = [];
+    data.forEach(function (d){
+       points.push([[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y]])
+    });
+    D = [];
+
+    for(var i = 0; i < points.length; i++){
+
+    }
+    var delaunay = new Delaunay(points);
+    var tri = delaunay.triangulate();
+}
+
 function calcTrianguels() {
     queue = new TinyQueue([], function (a,b){
         return b.abs -a.abs;
@@ -170,56 +207,135 @@ function calcTrianguels() {
     circles.each(function (d, i){
         points.push([mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y]);
     })
-    points = points.slice(0,1000);
+    //points = points.slice(0,1000);
     var delaunay = new Delaunay(points);
     var tri = delaunay.triangulate();
 
     for(i=1;i<tri.length;i=i+2){
+        let r1 = 0;
+        let r2 = 0;
+
         //maybe work with deque, see lecture
+        /*
+        r1 = circles.filter(function (d){
+            if(compareArray([tri[i-1][0],tri[i-1][1]],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
+                return d;
+            }
+        }).attr("r");
+
+        r2 = circles.filter(function (d){
+            if(compareArray([tri[i][0],tri[i][1]],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
+                return d;
+            }
+        }).attr("r");
+
+         */
+
+        for(var z = 0; z < data.length; z++){
+            if(compareArray([tri[i-1][0],tri[i-1][1]],[mymap.latLngToLayerPoint(data[z].LatLng).x, mymap.latLngToLayerPoint(data[z].LatLng).y])){
+                r1 = data[z].r;
+            }
+            if(compareArray([tri[i][0],tri[i][1]],[mymap.latLngToLayerPoint(data[z].LatLng).x, mymap.latLngToLayerPoint(data[z].LatLng).y])){
+                r2 = data[z].r;
+            }
+        }
+
+        console.log("newr " + (parseFloat(r1) + parseFloat(r2)));
+
        temp = Math.sqrt(Math.pow(tri[i-1][0]-tri[i][0],2) + Math.pow(tri[i-1][1]-tri[i][1],2));
-       if((localr * 2) > temp){
-           queue.push({pts:[tri[i-1],tri[i]], abs:temp});
+       if((parseFloat(r1) + parseFloat(r2)) > temp){
+           queue.push({pts:[tri[i-1],tri[i]], abs:temp, newr: parseFloat(r1) + parseFloat(r2)});
        }
     }
+    console.log("Start:"+ data.length + " " + queue.length);
     while(queue.peek() !== undefined){
         temp = queue.pop();
 
-        console.log(
-            circles.select(function (d){
-            if(compareArray(temp.pts[0],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
-                return d;
+        for(var j = 0; j < data.length; j++){
+            if(compareArray([mymap.latLngToLayerPoint(data[j].LatLng).x, mymap.latLngToLayerPoint(data[j].LatLng).y],temp.pts[1])){
+                data[j].r = temp.newr;
             }
-        }).attr("r")
-        );
+            if(compareArray([mymap.latLngToLayerPoint(data[j].LatLng).x, mymap.latLngToLayerPoint(data[j].LatLng).y],temp.pts[0])){
+                data.splice(j,1);
+                pointremove = true;
+            }
 
-        point1r = circles.select(function (d){
+        }
+
+        /*
+        point1r = circles.filter(function (d){
             if(compareArray(temp.pts[0],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
                 return d;
             }
         }).attr("r");
 
-        point2r = circles.select(function (d){
-            if(compareArray(temp.pts[2],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
+        point2r = circles.filter(function (d){
+            if(compareArray(temp.pts[1],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
                 return d;
             }
         }).attr("r");
-
 
         if(point1r >= point2r){
-            newr = point1r + point2r;
-            circles.select(function (d){
+            newr = parseFloat(point1r) + parseFloat(point2r);
+            console.log(newr);
+            for(var j = 0; j < data.length; j++){
+                if(compareArray([mymap.latLngToLayerPoint(data[j].LatLng).x, mymap.latLngToLayerPoint(data[j].LatLng).y],temp.pts[1])){
+                    data[j].r = newr;
+                }
+                if(compareArray([mymap.latLngToLayerPoint(data[j].LatLng).x, mymap.latLngToLayerPoint(data[j].LatLng).y],temp.pts[0])){
+                    data.splice(j,1);
+                    pointremove = true;
+                }
+
+            }
+
+
+            circles.filter(function (d){
                 if(compareArray(temp.pts[0],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
                     return d;
                 }
             }).attr("r", newr);
-            circles.select(function (d){
+
+            circles.filter(function (d){
                 if(compareArray(temp.pts[1],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
                     return d;
                 }
             }).remove();
+
+
+
+        }else{
+            newr = parseFloat(point1r) + parseFloat(point2r);
+
+            for(var k = 0; k < data.length; k++){
+                if(compareArray([mymap.latLngToLayerPoint(data[k].LatLng).x, mymap.latLngToLayerPoint(data[k].LatLng).y],temp.pts[0])){
+                    data[k].r = newr;
+                }
+                if(compareArray([mymap.latLngToLayerPoint(data[k].LatLng).x, mymap.latLngToLayerPoint(data[k].LatLng).y],temp.pts[1])){
+                    data.splice(k,1);
+                    pointremove = true;
+                }
+
+            }
+
+            /*
+            circles.filter(function (d){
+                if(compareArray(temp.pts[1],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
+                    return d;
+                }
+            }).attr("r", newr);
+
+            circles.filter(function (d){
+                if(compareArray(temp.pts[0],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
+                    return d;
+                }
+            }).remove();
+
+
         }
+        */
     }
-    console.log("im Here")
+    console.log("End:" + data.length);
     updateView();
     if(pointremove){
         calcTrianguels();
@@ -248,8 +364,6 @@ function compareArray(x,y){
 
 function chart(d) {
     var data = d.data;
-    console.log(data)
-
 
     var width = 300;
     var height = 80;

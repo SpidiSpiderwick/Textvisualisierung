@@ -33,17 +33,7 @@
 
 <script type="text/javascript">
     onLoadPage();
-
-    mytuple = {point:[0,300],r:0.1};
-    mytuple2 = {point:[4,235],r:0.3};
-    mytuple3 = {point:[10,5], r:10};
-    console.log(mytuple.r);
-
-    queue = new TinyQueue([], function (a,b){
-        return b.r -a.r;
-    });
-    queue.push(mytuple3);
-    console.log(queue.pop());
+    console.log([(0,0),(1,1)].includes((0,1)));
 </script>
 
 <script type="text/javascript">
