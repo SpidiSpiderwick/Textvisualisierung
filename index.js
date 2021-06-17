@@ -13,6 +13,9 @@ var radius = 3;
 var scaleSVG = true;
 var opacity = 0.5;
 var zoomlevel;
+var D;
+var z = mymap.getZoom();
+
 
 function onLoadPage(){
     initMap();
@@ -33,8 +36,8 @@ function initMap() {
         accessToken: 'your.mapbox.access.token'
     }).addTo(mymap);
 
-    mymap.on('viewreset', updateView);
-    mymap.on('zoom', updateView);
+    mymap.on('viewreset', updateEverything);
+    mymap.on('zoom', updateEverything);
 
     //this svg holds the d3 visualizations
     svg = d3.select(mymap.getPanes().overlayPane).append("svg");
@@ -53,23 +56,44 @@ function loadFile(file){
     reader.onloadend = function(event){ //gibt an was passiert, wenn die Datei fertig geladen wurde
         data = JSON.parse(reader.result);
         //so its faster for testting
-        data = data.slice(0,1000);
-
+        data = data.slice(0,10000);
 
         data.forEach(createLatLng);
 
-        circles = g.selectAll("circle")
-            .data(data)
-            .enter()
-            .append("circle")
-            .attr("r", radius)
-            .style("fill", "red")
-            .attr("opacity", opacity)
-            .on("mouseover", handleMouseOver)
-            .on("mouseout", handleMouseOut)
-            .on("click", chart);
-        zoomlevel = mymap.getZoom();
-        updateView();
+        console.log(data);
+
+        preprocessD();
+        updateView2();
+        /*
+                circles = g.selectAll("circle")
+                    .data(D)
+                    .enter()
+                    .append("circle")
+                    .attr("r", radius)
+                    .style("fill", "red")
+                    .attr("opacity", opacity)
+                    .on("mouseover", handleMouseOver)
+                    .on("mouseout", handleMouseOut)
+                    .on("click", chart);
+
+                updateView2();
+
+
+
+                circles = g.selectAll("circle")
+                    .data(data)
+                    .enter()
+                    .append("circle")
+                    .attr("r", radius)
+                    .style("fill", "red")
+                    .attr("opacity", opacity)
+                    .on("mouseover", handleMouseOver)
+                    .on("mouseout", handleMouseOut)
+                    .on("click", chart);
+                updateView();
+
+         */
+
     }
 }
 
@@ -98,20 +122,24 @@ function createLatLng(d)
 function updatePosition(d)
 {
     var newpoint = mymap.latLngToLayerPoint(d.LatLng);
+    //var newpoint = {lat: d.p[0], lng: d.p[1]};
     pointPositions.push(newpoint);
 }
 
 function updateView()
 {
     //clear old positions
+    /*
     circles = g.selectAll("circle").data(data);
     circles.exit().remove();
+
+     */
     pointPositions = [];
     data.forEach(updatePosition);
-
+    console.log(pointPositions);
     circles.attr("cx",function(d) { return mymap.latLngToLayerPoint(d.LatLng).x});
     circles.attr("cy",function(d) { return mymap.latLngToLayerPoint(d.LatLng).y});
-    circles.attr("r", function (d){ return d.r});
+
     /*
     if(zoomlevel>mymap.getZoom()){
         data.forEach(function (d){
@@ -126,7 +154,6 @@ function updateView()
     }else{
 
     }
-
      */
 
     bounds = calculateDataBounds(pointPositions);
@@ -142,7 +169,14 @@ function updateView()
     g .attr("transform", "translate(" + (-topLeft.x+padding) + ","
         + (-topLeft.y+padding) + ")");
 
-    zoomlevel = mymap.getZoom();
+/*
+    circles.attr("cx",function(d) { return d.p[0]});
+    circles.attr("cy",function(d) { return d.p[1]});
+    circles.attr("r", function (d){ return d.r});
+
+    D.forEach(updatePosition);
+
+ */
 
 }
 
@@ -183,163 +217,71 @@ function calculateDataBounds(features)
 }
 
 function calcTri(){
-    points = [];
-    data.forEach(function (d){
-       points.push([[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y]])
-    });
-    D = [];
-
-    for(var i = 0; i < points.length; i++){
-
-    }
-    var delaunay = new Delaunay(points);
-    var tri = delaunay.triangulate();
-}
-
-function calcTrianguels() {
-    queue = new TinyQueue([], function (a,b){
+    console.log(z);
+    var pointdeleted = false;
+    var queue = new TinyQueue([], function (a,b){
         return b.abs -a.abs;
     });
-    points = [];
-    temp = 0;
-    localr = circles.attr("r");
-    pointremove = false;
-    circles.each(function (d, i){
-        points.push([mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y]);
-    })
-    //points = points.slice(0,1000);
-    var delaunay = new Delaunay(points);
+    var pointsForTri = [];
+    for(var b = 0; b < D.length; b++){
+        D[b].r = (Math.log10(D[b].frequency + 1) * 30)/z;
+        pointsForTri.push(D[b].p);
+    }
+
+    var delaunay = new Delaunay(pointsForTri);
     var tri = delaunay.triangulate();
 
-    for(i=1;i<tri.length;i=i+2){
-        let r1 = 0;
-        let r2 = 0;
-
-        //maybe work with deque, see lecture
-        /*
-        r1 = circles.filter(function (d){
-            if(compareArray([tri[i-1][0],tri[i-1][1]],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
-                return d;
-            }
-        }).attr("r");
-
-        r2 = circles.filter(function (d){
-            if(compareArray([tri[i][0],tri[i][1]],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
-                return d;
-            }
-        }).attr("r");
-
-         */
-
-        for(var z = 0; z < data.length; z++){
-            if(compareArray([tri[i-1][0],tri[i-1][1]],[mymap.latLngToLayerPoint(data[z].LatLng).x, mymap.latLngToLayerPoint(data[z].LatLng).y])){
-                r1 = data[z].r;
-            }
-            if(compareArray([tri[i][0],tri[i][1]],[mymap.latLngToLayerPoint(data[z].LatLng).x, mymap.latLngToLayerPoint(data[z].LatLng).y])){
-                r2 = data[z].r;
-            }
-        }
-
-        console.log("newr " + (parseFloat(r1) + parseFloat(r2)));
-
-       temp = Math.sqrt(Math.pow(tri[i-1][0]-tri[i][0],2) + Math.pow(tri[i-1][1]-tri[i][1],2));
-       if((parseFloat(r1) + parseFloat(r2)) > temp){
-           queue.push({pts:[tri[i-1],tri[i]], abs:temp, newr: parseFloat(r1) + parseFloat(r2)});
-       }
+    var D2 = [];
+    for(var d = 0; d < tri.length; d++){
+        var test = D[searchForArray(D, tri[d])];
+        var newD = {p:tri[d], frequency:test.frequency, r:test.r};
+        D2.push(newD);
     }
-    console.log("Start:"+ data.length + " " + queue.length);
+
+    let temp, point;
+    for (var c = 1; c < D2.length; c = c + 2) {
+        temp = Math.sqrt(Math.pow(D2[c - 1].p[0] - D2[c].p[0], 2) + Math.pow(D2[c - 1].p[1] - D2[c].p[1], 2));
+        if ((D2[c - 1].r + D2[c].r) > temp) {
+            queue.push({pts: [D2[c - 1], D2[c]], abs: temp})
+        }
+    }
     while(queue.peek() !== undefined){
-        temp = queue.pop();
-
-        for(var j = 0; j < data.length; j++){
-            if(compareArray([mymap.latLngToLayerPoint(data[j].LatLng).x, mymap.latLngToLayerPoint(data[j].LatLng).y],temp.pts[1])){
-                data[j].r = temp.newr;
-            }
-            if(compareArray([mymap.latLngToLayerPoint(data[j].LatLng).x, mymap.latLngToLayerPoint(data[j].LatLng).y],temp.pts[0])){
-                data.splice(j,1);
-                pointremove = true;
-            }
-
-        }
-
-        /*
-        point1r = circles.filter(function (d){
-            if(compareArray(temp.pts[0],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
-                return d;
-            }
-        }).attr("r");
-
-        point2r = circles.filter(function (d){
-            if(compareArray(temp.pts[1],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
-                return d;
-            }
-        }).attr("r");
-
-        if(point1r >= point2r){
-            newr = parseFloat(point1r) + parseFloat(point2r);
-            console.log(newr);
-            for(var j = 0; j < data.length; j++){
-                if(compareArray([mymap.latLngToLayerPoint(data[j].LatLng).x, mymap.latLngToLayerPoint(data[j].LatLng).y],temp.pts[1])){
-                    data[j].r = newr;
-                }
-                if(compareArray([mymap.latLngToLayerPoint(data[j].LatLng).x, mymap.latLngToLayerPoint(data[j].LatLng).y],temp.pts[0])){
-                    data.splice(j,1);
-                    pointremove = true;
-                }
-
-            }
-
-
-            circles.filter(function (d){
-                if(compareArray(temp.pts[0],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
-                    return d;
-                }
-            }).attr("r", newr);
-
-            circles.filter(function (d){
-                if(compareArray(temp.pts[1],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
-                    return d;
-                }
-            }).remove();
-
-
-
-        }else{
-            newr = parseFloat(point1r) + parseFloat(point2r);
-
-            for(var k = 0; k < data.length; k++){
-                if(compareArray([mymap.latLngToLayerPoint(data[k].LatLng).x, mymap.latLngToLayerPoint(data[k].LatLng).y],temp.pts[0])){
-                    data[k].r = newr;
-                }
-                if(compareArray([mymap.latLngToLayerPoint(data[k].LatLng).x, mymap.latLngToLayerPoint(data[k].LatLng).y],temp.pts[1])){
-                    data.splice(k,1);
-                    pointremove = true;
-                }
-
-            }
-
-            /*
-            circles.filter(function (d){
-                if(compareArray(temp.pts[1],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
-                    return d;
-                }
-            }).attr("r", newr);
-
-            circles.filter(function (d){
-                if(compareArray(temp.pts[0],[mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])) {
-                    return d;
-                }
-            }).remove();
-
-
-        }
-        */
+         point = queue.pop();
+         var locSmall, locBig;
+         if(point.pts[0].r > point.pts[1].r){
+             locBig = searchForArray(D, point.pts[0].p);
+             locSmall = searchForArray(D,point.pts[1].p);
+             if(locBig > 0){
+                 D[locBig].frequency = point.pts[0].frequency + point.pts[1].frequency;
+                 //D[locBig].sp.push(D[locSmall].sp);
+                 D[locBig].r = (Math.log10(D[locBig].frequency + 1) * 30)/z;
+                 D.splice(locSmall,1);
+                 pointdeleted = true;
+             }
+             else{
+                 //console.log("Point already deleted.");
+             }
+         }else{
+             locBig = searchForArray(D, point.pts[1].p);
+             locSmall = searchForArray(D,point.pts[0].p);
+             if(locBig > 0){
+                 D[locBig].frequency = point.pts[0].frequency + point.pts[1].frequency;
+                 //D[locBig].sp.push(D[locSmall].sp);
+                 D[locBig].r = (Math.log10(D[locBig].frequency + 1) * 30)/z;
+                 D.splice(locSmall,1);
+                 pointdeleted = true;
+             }
+             //console.log("Point already deleted.");
+         }
     }
-    console.log("End:" + data.length);
-    updateView();
-    if(pointremove){
-        calcTrianguels();
+    if(pointdeleted){
+        console.log("Run finished.");
+        //calcLatLngMean();
+        calcTri();
     }
+    //calcLatLngMean();
+    console.log("finish");
+    console.log(D);
 }
 
 function compareArray(x,y){
@@ -358,7 +300,19 @@ function compareArray(x,y){
         }
     }
     return true;
+}
 
+function searchForArray(haystack, needle){
+    var i, j, current;
+    for(i = 0; i < haystack.length; ++i){
+        if(needle.length === haystack[i].p.length){
+            current = haystack[i].p;
+            for(j = 0; j < needle.length && needle[j] === current[j]; ++j);
+            if(j === needle.length)
+                return i;
+        }
+    }
+    return -1;
 }
 
 
@@ -425,6 +379,109 @@ function chart(d) {
 
     return div.node();
 
+}
+
+function updateView2(){
+
+    calcTri();
+
+    circles = g.selectAll("circle")
+        .data(D)
+        .enter()
+        .append("circle")
+        .attr("r", radius)
+        .style("fill", "red")
+        .attr("opacity", opacity)
+        .on("mouseover", handleMouseOver)
+        .on("mouseout", handleMouseOut)
+        .on("click", chart);
+
+    pointPositions = [];
+    D.forEach(updatePosition);
+    console.log(pointPositions);
+    circles.attr("cx",function(d) { return mymap.latLngToLayerPoint(d.LatLng).x});
+    circles.attr("cy",function(d) { return mymap.latLngToLayerPoint(d.LatLng).y});
+    circles.attr("r",function(d) { return d.r});
+
+    bounds = calculateDataBounds(pointPositions);
+
+    var topLeft = bounds[0];
+    var bottomRight = bounds[1];
+
+    svg .attr("width", bottomRight.x - topLeft.x + 2*padding)
+        .attr("height", bottomRight.y- topLeft.y + 2*padding)
+        .style("left", topLeft.x-padding + "px")
+        .style("top", topLeft.y-padding + "px");
+
+    g .attr("transform", "translate(" + (-topLeft.x+padding) + ","
+        + (-topLeft.y+padding) + ")");
+
+}
+
+function preprocessD(){
+    setZ();
+    var points = [];
+    data.forEach(function (d){
+        kartenpunkt = ([mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])
+        points.push({kp:kartenpunkt, LatLng: d.LatLng});
+    });
+    D = [];
+    for(var a = 0; a < points.length; a++){
+        loc = searchForArray(D,points[a].kp);
+        if(loc > 0){
+            D[loc].frequency = D[loc].frequency + 1;
+        }else{
+            D.push({p:points[a].kp, frequency:1, r:1, LatLng: points[a].LatLng, sp:[points[a].LatLng]});
+        }
+    }
+}
+
+function calcLatLngMean(){
+    D.forEach(function (d){
+        var newmeanlat;
+        var newmeanlong;
+        for(var e = 0; e<d.sp.length; e++){
+            newmeanlat += d.sp[e].LatLng.lat;
+            newmeanlong += d.sp[e].LatLng.long;
+        }
+        d.LatLng = {lat: newmeanlat/d.sp.length, lng: newmeanlong/d.sp.length};
+        d.sp = [d.LatLng];
+    })
+}
+
+function updateEverything(){
+    g.selectAll("*").remove();
+    preprocessD();
+    updateView2();
+}
+function setZ(){
+    console.log(mymap.getZoom());
+    switch (mymap.getZoom()){
+        case 5:
+            z = mymap.getZoom()*1.5;
+            break;
+        case 6:
+            z = mymap.getZoom();
+            break;
+        case 7:
+            z = mymap.getZoom()*0.6;
+            break;
+        case 8:
+            z = mymap.getZoom()*0.3;
+            break;
+        case 9:
+            z = mymap.getZoom()*0.3;
+            break;
+        case 10:
+            z = mymap.getZoom()*0.25;
+            break;
+        case 11:
+            z = mymap.getZoom()*0.2;
+            break;
+        default:
+            z=mymap.getZoom();
+
+    }
 }
 
 
