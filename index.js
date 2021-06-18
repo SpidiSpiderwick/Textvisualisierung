@@ -2,6 +2,8 @@
  * example function
  */
 
+var data;
+
 var mymap;
 var svg;
 var g;
@@ -14,7 +16,7 @@ var scaleSVG = true;
 var opacity = 0.5;
 var zoomlevel;
 var D;
-var z = mymap.getZoom();
+var z;
 
 
 function onLoadPage(){
@@ -28,13 +30,15 @@ function onLoadPage(){
 function initMap() {
     mymap = L.map('mapid').setView([46.54, 2.44], 6);
     L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1Ijoic3BpZGVyd2ljayIsImEiOiJja3BndGhsem8ya2l3Mm5ubG9qdmg1Y2I0In0.VLvrurO3hpyg39BlqImU8w', {
-        attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+        attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery Â© <a href="https://www.mapbox.com/">Mapbox</a>',
         maxZoom: 18,
         id: 'mapbox/streets-v11',
         tileSize: 512,
         zoomOffset: -1,
         accessToken: 'your.mapbox.access.token'
     }).addTo(mymap);
+
+    z = mymap.getZoom();
 
     mymap.on('viewreset', updateEverything);
     mymap.on('zoom', updateEverything);
@@ -56,66 +60,40 @@ function loadFile(file){
     reader.onloadend = function(event){ //gibt an was passiert, wenn die Datei fertig geladen wurde
         data = JSON.parse(reader.result);
         //so its faster for testting
-        data = data.slice(0,10000);
 
-        data.forEach(createLatLng);
+        var n = 0;
+        for (const index in data) {
+            if (n < 10000) {
+                appendInformation(data[index]);
+                n++;
+            } else {
+                delete data[index];
+            }
+        }
 
         console.log(data);
 
         preprocessD();
         updateView2();
-        /*
-                circles = g.selectAll("circle")
-                    .data(D)
-                    .enter()
-                    .append("circle")
-                    .attr("r", radius)
-                    .style("fill", "red")
-                    .attr("opacity", opacity)
-                    .on("mouseover", handleMouseOver)
-                    .on("mouseout", handleMouseOut)
-                    .on("click", chart);
-
-                updateView2();
-
-
-
-                circles = g.selectAll("circle")
-                    .data(data)
-                    .enter()
-                    .append("circle")
-                    .attr("r", radius)
-                    .style("fill", "red")
-                    .attr("opacity", opacity)
-                    .on("mouseover", handleMouseOver)
-                    .on("mouseout", handleMouseOut)
-                    .on("click", chart);
-                updateView();
-
-         */
-
     }
 }
 
 function handleMouseOver(d, i) {  // Add interactivity
-
-    // Use D3 to select element, change color and size
-    d3.select(this).style("fill", "orange");
-    console.log(d3.select(this).attr("r"));
-    d3.select(this).attr("r", 50);
+    // Use D3 to select element, change color
+    d3.select(this).transition().duration(100).style("opacity", 1.0);
+    console.log(d3.select(this));
+    // d3.select(this).attr("r", 50);
 }
 
 function handleMouseOut(d, i) {
     // Use D3 to select element, change color back to normal
-    d3.select(this).style("fill", "red");
-    d3.select(this).attr("r",function(d) { return d.r});
-
+    d3.select(this).transition().duration(100).style("opacity", opacity);
+    // d3.select(this).attr("r",function(d) { return d.r});
 }
 
-function createLatLng(d)
+function appendInformation(d)
 {
     d.LatLng = new L.LatLng(d.lat, d.long);
-    d.data = [10,12,16,20,25,30,30,29,13,10,7,6];
     d.r = radius;
 }
 
@@ -135,7 +113,11 @@ function updateView()
 
      */
     pointPositions = [];
-    data.forEach(updatePosition);
+    //this loop wont work
+    for (const index in data) {
+        updatePosition(data[index]);
+    }
+
     console.log(pointPositions);
     circles.attr("cx",function(d) { return mymap.latLngToLayerPoint(d.LatLng).x});
     circles.attr("cy",function(d) { return mymap.latLngToLayerPoint(d.LatLng).y});
@@ -234,7 +216,7 @@ function calcTri(){
     var D2 = [];
     for(var d = 0; d < tri.length; d++){
         var test = D[searchForArray(D, tri[d])];
-        var newD = {p:tri[d], frequency:test.frequency, r:test.r};
+        var newD = {p:tri[d], frequency:test.frequency, r:test.r, accidents:test.accidents};
         D2.push(newD);
     }
 
@@ -251,26 +233,18 @@ function calcTri(){
          if(point.pts[0].r > point.pts[1].r){
              locBig = searchForArray(D, point.pts[0].p);
              locSmall = searchForArray(D,point.pts[1].p);
-             if(locBig > 0){
-                 D[locBig].frequency = point.pts[0].frequency + point.pts[1].frequency;
-                 //D[locBig].sp.push(D[locSmall].sp);
-                 D[locBig].r = (Math.log10(D[locBig].frequency + 1) * 30)/z;
-                 D.splice(locSmall,1);
-                 pointdeleted = true;
-             }
-             else{
-                 //console.log("Point already deleted.");
-             }
          }else{
              locBig = searchForArray(D, point.pts[1].p);
              locSmall = searchForArray(D,point.pts[0].p);
-             if(locBig > 0){
-                 D[locBig].frequency = point.pts[0].frequency + point.pts[1].frequency;
-                 //D[locBig].sp.push(D[locSmall].sp);
-                 D[locBig].r = (Math.log10(D[locBig].frequency + 1) * 30)/z;
-                 D.splice(locSmall,1);
-                 pointdeleted = true;
-             }
+         }
+         if(locBig > 0){
+             D[locBig].frequency = point.pts[0].frequency + point.pts[1].frequency;
+             //D[locBig].sp.push(D[locSmall].sp);
+             D[locBig].r = (Math.log10(D[locBig].frequency + 1) * 30)/z;
+             D[locBig].accidents = point.pts[0].accidents.concat(point.pts[1].accidents);
+             D.splice(locSmall,1);
+             pointdeleted = true;
+         } else{
              //console.log("Point already deleted.");
          }
     }
@@ -316,26 +290,81 @@ function searchForArray(haystack, needle){
 }
 
 
-function chart(d) {
-    var data = d.data;
+function chart() {
 
-    var width = 300;
-    var height = 80;
+    svg.selectAll("circle").style("fill", "red");
+
+    d3.select(this).style("fill", "blue");
+
+    var accumulated_data = d3.select(this).data()[0];
+
+    console.log(accumulated_data);
+
+    var accident_nums = accumulated_data.accidents;
+
+    console.log(accident_nums);
+
+    var relevant_data = [];
+
+    for (let acc_num of accident_nums) {
+        relevant_data.push(data[acc_num]);
+    }
+
+    console.log(relevant_data);
+
+    var count_year = {}, count_month = {}, count_day = {}, count_hour = {};
+
+    var years = [], months = [], days = [], hours = [];
+
+    for (let acc of relevant_data) {
+        if (acc["y"] in count_year) {
+            count_year[acc["y"]] += 1;
+        } else {
+            count_year[acc["y"]] = 1;
+        }
+        if (acc["m"] in count_month) {
+            count_month[acc["m"]] += 1;
+        } else {
+            count_month[acc["m"]] = 1;
+        }
+        if (acc["d"] in count_day) {
+            count_day[acc["d"]] += 1;
+        } else {
+            count_day[acc["d"]] = 1;
+        }
+        if (acc["hr"] in count_hour) {
+            count_hour[acc["hr"]] += 1;
+        } else {
+            count_hour[acc["hr"]] = 1;
+        }
+    }
+
+    for (var key of Object.keys(count_month).values()) {
+        months.push({"key": key, "value": count_month[key]});
+    }
+
+    months.sort( function (a, b) { return a.key - b.key; });
+
+
+    var w = 300;
+    var h = 300;
     var margin = {left:20,right:15,top:40,bottom:40};
     var parse = d3.timeParse("%m");
     var format = d3.timeFormat("%b");
 
-    var div = d3.create("div")
+    var extraSVG = d3.select("#extraChart")
+        .attr("width", w+margin.left+margin.right)
+        .attr("height", h+margin.top+margin.bottom);
 
-    var svg = div.append("svg")
-        .attr("width", width+margin.left+margin.right)
-        .attr("height", height+margin.top+margin.bottom);
-    var g = svg.append("g")
+    extraSVG.selectAll("*").remove();
+
+
+    var g = extraSVG.append("g")
         .attr("transform","translate("+[margin.left,margin.top]+")");
 
     var y = d3.scaleLinear()
-        .domain([0, d3.max(data, function(d) { return d; }) ])
-        .range([height,0]);
+        .domain([0, d3.max(Object.entries(count_month), function(d) { return Number(d[1]); }) ])
+        .range([h,0]);
 
     var yAxis = d3.axisLeft()
         .ticks(4)
@@ -343,42 +372,46 @@ function chart(d) {
     g.append("g").call(yAxis);
 
     var x = d3.scaleBand()
-        .domain(d3.range(12))
-        .range([0,width]);
+        .domain(d3.range(1, 13))
+        .range([0,w]);
 
     var xAxis = d3.axisBottom()
         .scale(x)
-        .tickFormat(function(d) { return format(parse(d+1)); });
+        .tickFormat(function(d) { return format(parse(d)); });
 
     g.append("g")
-        .attr("transform", "translate(0," + height + ")")
+        .attr("transform", "translate(0," + h + ")")
         .call(xAxis)
         .selectAll("text")
         .attr("text-anchor","end")
         .attr("transform","rotate(-90)translate(-12,-15)")
 
+    console.log(months);
+
+    var pad = 3;
+
+    var rect_width = w / 12 - 2 * pad;
+
     var rects = g.selectAll("rect")
-        .data(data)
+        .data(months)
         .enter()
         .append("rect")
-        .attr("y",height)
-        .attr("height",0)
-        .attr("width", x.bandwidth()-2 )
-        .attr("x", function(d,i) { return x(i); })
+        .attr("x", function(d, i) {
+            return pad + (d.key - 1) * ( w / 12);
+        })
+        .attr("width",  rect_width )//wir teilen die Breite gleichmäßig auf
         .attr("fill","steelblue")
+        .attr("y", h)
         .transition()
-        .attr("height", function(d) { return height-y(d); })
-        .attr("y", function(d) { return y(d); })
-        .duration(1000);
+        .duration(1000)
+        .attr("y", function(d) { return y(d.value); })
+        .attr("height", function(d) { return h-y(d.value); });
 
-    var title = svg.append("text")
+    var title = extraSVG.append("text")
         .style("font-size", "20px")
-        .attr("x", width/2 + margin.left)
+        .attr("x", w/2 + margin.left)
         .attr("y", 30)
         .attr("text-anchor","middle");
-
-    return div.node();
-
 }
 
 function updateView2(){
@@ -421,17 +454,22 @@ function updateView2(){
 function preprocessD(){
     setZ();
     var points = [];
-    data.forEach(function (d){
-        kartenpunkt = ([mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y])
-        points.push({kp:kartenpunkt, LatLng: d.LatLng});
-    });
+    for (const index in data) {
+        var d = data[index];
+        kartenpunkt = ([mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y]);
+        points.push({kp:kartenpunkt, LatLng: d.LatLng, NumAcc: d["Num_Acc"]});
+        // console.log("accident number" + d["Num_Acc"]);
+    }
+
     D = [];
     for(var a = 0; a < points.length; a++){
         loc = searchForArray(D,points[a].kp);
         if(loc > 0){
+            // hier muessten eigentlich noch informationen angehangen werden
             D[loc].frequency = D[loc].frequency + 1;
+            D[loc].accidents.push(points[a].NumAcc);
         }else{
-            D.push({p:points[a].kp, frequency:1, r:1, LatLng: points[a].LatLng, sp:[points[a].LatLng]});
+            D.push({p:points[a].kp, frequency:1, r:1, LatLng: points[a].LatLng, sp:[points[a].LatLng], accidents: [points[a].NumAcc]});
         }
     }
 }
