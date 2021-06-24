@@ -81,7 +81,6 @@ function loadFile(file){
 function handleMouseOver(d, i) {  // Add interactivity
     // Use D3 to select element, change color
     d3.select(this).transition().duration(100).style("opacity", 1.0);
-    console.log(d3.select(this));
     // d3.select(this).attr("r", 50);
 }
 
@@ -289,20 +288,32 @@ function searchForArray(haystack, needle){
     return -1;
 }
 
+function displayExtraInfo(){
 
-function chart() {
-
+    let selectElement = document.getElementById("select");
+    let valueSelected = selectElement.value;
     svg.selectAll("circle").style("fill", "red");
-
     d3.select(this).style("fill", "blue");
 
-    var accumulated_data = d3.select(this).data()[0];
+    switch (valueSelected){
+        case "1":
+            piechart(d3.select(this).data()[0]);
+            break;
+        case "2":
+            z = mymap.getZoom();
+            break;
+        case "3":
+            chart(d3.select(this).data()[0]);
+            break;
+        default:
+            console.log("If you reach me something realy went wrong");
+    }
 
-    console.log(accumulated_data);
+}
+
+function piechart(accumulated_data){
 
     var accident_nums = accumulated_data.accidents;
-
-    console.log(accident_nums);
 
     var relevant_data = [];
 
@@ -310,8 +321,81 @@ function chart() {
         relevant_data.push(data[acc_num]);
     }
 
-    console.log(relevant_data);
+    var count_options = {};
 
+    for(let acc of relevant_data){
+        if (acc["atm"] in count_options){
+            count_options[acc["atm"]] += 1;
+        }else{
+            count_options[acc["atm"]] = 1;
+        }
+    }
+    console.log(count_options);
+    var piedata = [];
+    for (var key of Object.keys(count_options).values()) {
+        piedata.push({"key": key, "value": count_options[key]});
+    }
+    console.log(piedata);
+
+
+    var w = 300,
+        h = 300,
+        radius = Math.min(w, h) / 2,
+        margin = {left:20,right:15,top:80,bottom:40};
+
+    var extraSVG = d3.select("#extraChart")
+        .attr("width", w+margin.left+margin.right)
+        .attr("height", h+margin.top+margin.bottom);
+
+    extraSVG.selectAll("*").remove();
+
+    var g = extraSVG.append("g")
+        .attr("transform", "translate(" + w / 2 + "," + h / 2 + ")");
+
+
+    // Step 4
+    var ordScale = d3.scaleOrdinal(d3.schemeCategory10 );
+
+    // Step 5
+    var pie = d3.pie().value(function(d) {
+        return d.value;
+    });
+
+    var arc = g.selectAll("arc")
+        .data(pie(piedata))
+        .enter();
+
+    // Step 6
+    var path = d3.arc()
+        .outerRadius(radius)
+        .innerRadius(0);
+
+    arc.append("path")
+        .attr("d", path)
+        .attr("fill", function(d) { return ordScale(d.data.key); });
+
+    // Step 7
+    var label = d3.arc()
+        .outerRadius(radius)
+        .innerRadius(0);
+
+    arc.append("text")
+        .attr("transform", function(d) {
+            return "translate(" + label.centroid(d) + ")";
+        })
+        .text(function(d) { return d.data.key; })
+        .style("font-family", "arial")
+        .style("font-size", 15);
+}
+
+
+function chart(accumulated_data) {
+    var accident_nums = accumulated_data.accidents;
+    var relevant_data = [];
+
+    for (let acc_num of accident_nums) {
+        relevant_data.push(data[acc_num]);
+    }
     var count_year = {}, count_month = {}, count_day = {}, count_hour = {};
 
     var years = [], months = [], days = [], hours = [];
@@ -427,7 +511,7 @@ function updateView2(){
         .attr("opacity", opacity)
         .on("mouseover", handleMouseOver)
         .on("mouseout", handleMouseOut)
-        .on("click", chart);
+        .on("click", displayExtraInfo);
 
     pointPositions = [];
     D.forEach(updatePosition);
