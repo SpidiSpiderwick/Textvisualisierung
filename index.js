@@ -92,7 +92,7 @@ function loadFile(file){
 
         prepTimelineData();
         showTimeline();
-        dataByTimeline();
+        console.log("timeline done?");
         preprocessD();
         updateView2();
 
@@ -125,7 +125,7 @@ function showTimeline() {
 
     const format = d3.timeFormat("%d. %B %Y");
 
-    const w = 600;
+    const w = 1000;
     const h = 100;
 
     const margin = {left: 30, right: 15, top: 10, bottom: 30};
@@ -198,6 +198,14 @@ function showTimeline() {
             .attr("y", function(d) { return y(d.value.length); })
             .attr("height", function(d) { return h-y(d.value.length); });
 
+        rects = g.selectAll("rect");
+
+        console.log("hmm");
+
+        function xToI (x) {
+            return ( x - pad ) / ( w / tlData.length );
+        }
+
         var title = svg.append("text")
             .style("font-size", "20px")
             .attr("x", w/2 + margin.left)
@@ -240,9 +248,8 @@ function showTimeline() {
         th = th !== undefined ? th : this;
         let elem = document.getElementById("slider");
         let mouseX = Number(d3.mouse(th)[0]);
-        let sl = d3.select(th);
-        let rectLeft = Number(sl.attr("x"));
-        let rectRight = rectLeft + Number(sl.attr("width"));
+        let rectLeft = Number(slider.attr("x"));
+        let rectRight = rectLeft + Number(slider.attr("width"));
 
         if (Math.abs(rectLeft - mouseX) < EPSILON || Math.abs(rectRight - mouseX) < EPSILON) {
             elem.style.cursor = "w-resize";
@@ -264,9 +271,8 @@ function showTimeline() {
     function startDrag() {
 
         let mouseX = Number(d3.mouse(this)[0]);
-        let sl = d3.select(this);
-        let rectLeft = Number(sl.attr("x"));
-        let rectRight = rectLeft + Number(sl.attr("width"));
+        let rectLeft = Number(slider.attr("x"));
+        let rectRight = rectLeft + Number(slider.attr("width"));
 
         if (Math.abs(rectLeft - mouseX) < EPSILON) {
             leftDrag = true;
@@ -281,17 +287,16 @@ function showTimeline() {
     }
 
     function drag() {
-        let sl = d3.select(this);
         // console.log(d3.mouse(this));
-        let oldL = Number(sl.attr("x"));
-        let oldR = Number(sl.attr("x")) + Number(sl.attr("width"));
+        let oldL = Number(slider.attr("x"));
+        let oldR = Number(slider.attr("x")) + Number(slider.attr("width"));
 
         if (centerDrag) {
             let newL = Number(d3.mouse( this )[0]) - Number(offset);
-            let newR = newL + Number(sl.attr("width"));
+            let newR = newL + Number(slider.attr("width"));
             // console.log(l + " " + r);
             if (newL > 0 && newR <= w) {
-                sl.attr("x", newL);
+                slider.attr("x", newL);
             }
         } else if (leftDrag) {
             let newL = Number(d3.mouse( this )[0]) - mousePadding;
@@ -300,7 +305,7 @@ function showTimeline() {
             //console.log("leftDrag " + newL + " " + newR);
 
             if (newL >= 0 && newR - newL >= minWidth) {
-                sl.attr("x", newL).attr("width", newR - newL);
+                slider.attr("x", newL).attr("width", newR - newL);
             }
 
         } else if (rightDrag) {
@@ -310,14 +315,14 @@ function showTimeline() {
             //console.log("rightDrag " + newL + " " + newR);
 
             if (newR <= w && newR - newL >= minWidth) {
-                sl.attr("width", newR - oldL);
+                slider.attr("width", newR - oldL);
             }
 
         } else {
             updateCursor(this);
         }
 
-        dataByTimeline();
+        highlightSliderRects(slider, rects, xToI);
 
     }
 
@@ -326,27 +331,39 @@ function showTimeline() {
         leftDrag = false;
         rightDrag = false;
         offset = 0;
-        dataByTimeline();
+        dataByTimeline(slider, rects, xToI);
         updateEverything();
     }
 
     function leaveSlider() {
         // do nothing
     }
+
+    dataByTimeline(slider, rects, xToI);
+
 }
 
-function dataByTimeline() {
-    let sl = d3.select("#slider");
-    let l = Number(sl.attr("x"));
-    let r = l + Number(sl.attr("width"));
+function highlightSliderRects(slider, rects, xToI) {
+    let l = Number(slider.attr("x"));
+    let r = l + Number(slider.attr("width"));
 
-    let selectedData = d3.selectAll("rect")
-        .attr("fill", "steelblue")
-        .filter(function () {
-            let el = d3.select(this);
-            return el.attr("id").startsWith("tl") && Number(el.attr("x")) >= l && Number(el.attr("x")) + Number(el.attr("width")) <= r;
-        })
-        .attr("fill", "red")
+    let start = Math.floor(xToI(l));
+    let end = Math.ceil(xToI(r));
+
+    rects
+        .attr("fill", function (d, i) { return (i >= start && i <= end) ? "red" : "steelblue" });
+}
+
+function dataByTimeline(slider, rects, xToI) {
+    let l = Number(slider.attr("x"));
+    let r = l + Number(slider.attr("width"));
+
+    let start = Math.floor(xToI(l));
+    let end = Math.ceil(xToI(r));
+
+    let selectedData = rects
+        .attr("fill", function (d, i) { return (i >= start && i <= end) ? "red" : "steelblue" })
+        .filter(function (d, i) { return i >= start && i <= end})
         .data();
 
     // console.log(selectedData);
