@@ -219,7 +219,7 @@ function showTimeline() {
         .on("mousedown", startDrag)
         .on("mousemove", drag)
         .on("mouseup", endDrag)
-        //.on("mouseleave", endDrag)
+        .on("mouseleave", leaveSlider)
         ;
 
     function updateCursor (th) {
@@ -241,6 +241,8 @@ function showTimeline() {
     let leftDrag = false;
     let rightDrag = false;
     let offset = 0;
+
+    let mousePadding = 10;
 
     let minWidth = 20;
     let maxWidth = 400;
@@ -265,16 +267,38 @@ function showTimeline() {
     }
 
     function drag() {
+        let sl = d3.select(this);
+        // console.log(d3.mouse(this));
+        let oldL = Number(sl.attr("x"));
+        let oldR = Number(sl.attr("x")) + Number(sl.attr("width"));
+
         if (centerDrag) {
-            let sl = d3.select(this);
-            // console.log(d3.mouse(this));
-            let l = Number(d3.mouse( this )[0]) - Number(offset);
-            let r = l + Number(sl.attr("width"));
+            let newL = Number(d3.mouse( this )[0]) - Number(offset);
+            let newR = newL + Number(sl.attr("width"));
             // console.log(l + " " + r);
-            if (l > 0 && r < w) {
-                sl.attr("x", l);
+            if (newL > 0 && newR <= w) {
+                sl.attr("x", newL);
             }
-            // set to old value + difference between mouse and left side
+        } else if (leftDrag) {
+            let newL = Number(d3.mouse( this )[0]);
+            let newR = oldR;
+
+            console.log("leftDrag " + newL + " " + newR);
+
+            if (newL >= 0 && newR - newL >= minWidth) {
+                sl.attr("x", newL - mousePadding).attr("width", newR - newL + mousePadding);
+            }
+
+        } else if (rightDrag) {
+            let newL = oldL;
+            let newR = Number(d3.mouse( this )[0]);
+
+            console.log("rightDrag " + newL + " " + newR);
+
+            if (newR <= w && newR - newL >= minWidth) {
+                sl.attr("width", newR - oldL + mousePadding);
+            }
+
         } else {
             updateCursor(this);
         }
@@ -282,9 +306,14 @@ function showTimeline() {
 
     function endDrag() {
         centerDrag = false;
+        leftDrag = false;
+        rightDrag = false;
         offset = 0;
     }
 
+    function leaveSlider() {
+        // do nothing
+    }
 
 }
 
