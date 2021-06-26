@@ -18,6 +18,11 @@ var zoomlevel;
 var D;
 var z;
 /**
+ * array of ids of accidents which are selected by the timeline slider
+ */
+var selected = [];
+
+/**
  * array, welches pro Datum ein Objekt enthält, welches die Form:
  * {
  *     "key": DATUM,
@@ -71,7 +76,7 @@ function loadFile(file){
         data = JSON.parse(reader.result);
         //so its faster for testting
 
-        var limit = 10000;
+        var limit = Number.MAX_SAFE_INTEGER;
 
         var n = 0;
         for (const index in data) {
@@ -85,10 +90,12 @@ function loadFile(file){
 
         console.log(data);
 
-        preprocessD();
-        updateView2();
         prepTimelineData();
         showTimeline();
+        dataByTimeline();
+        preprocessD();
+        updateView2();
+
     }
 }
 
@@ -121,7 +128,7 @@ function showTimeline() {
     const w = 600;
     const h = 100;
 
-    const margin = {left: 30, right: 15, top: 10, bottom: 10};
+    const margin = {left: 30, right: 15, top: 10, bottom: 30};
 
     const svg = d3.select("#timelineid").append("svg")
         .attr("width", w + margin.left + margin.right)
@@ -149,18 +156,24 @@ function showTimeline() {
         }))
         .range([0,w]);
 
-    /*
+
     var xAxis = d3.axisBottom()
+        .ticks(d3.timeYear.every(1))
         .scale(x)
-        .tickFormat(function(d) { return format(new Date(d)); });
+        .tickFormat(function(d) {
+            let date = new Date(d);
+            if (date.getDate() === 1 && date.getMonth() === 0) {
+                return date.getFullYear();
+            }
+        });
 
     g.append("g")
         .attr("transform", "translate(0," + h + ")")
         .call(xAxis)
         .selectAll("text")
-        .attr("text-anchor","end")
-        .attr("transform","rotate(-90)translate(-12,-15)")
-    */
+        //.attr("text-anchor","end")
+        //.attr("transform","rotate(-90)translate(-12,-15)")
+
     let mode = 0;
 
     if (mode === 0) {
@@ -173,6 +186,7 @@ function showTimeline() {
             .data(tlData)
             .enter()
             .append("rect")
+            .attr("id", function(d, i) {return "tl" + i})
             .attr("x", function(d, i) {
                 return pad + i * ( w / tlData.length);
             })
@@ -209,7 +223,7 @@ function showTimeline() {
         .attr("id", "slider")
         .attr("x", 0)
         .attr("y", 0)
-        .attr("width", 100)
+        .attr("width", 35)
         .attr("height", h)
         .attr("fill", "steelblue")
         .attr("fill-opacity", 0.3)
@@ -280,28 +294,31 @@ function showTimeline() {
                 sl.attr("x", newL);
             }
         } else if (leftDrag) {
-            let newL = Number(d3.mouse( this )[0]);
+            let newL = Number(d3.mouse( this )[0]) - mousePadding;
             let newR = oldR;
 
-            console.log("leftDrag " + newL + " " + newR);
+            //console.log("leftDrag " + newL + " " + newR);
 
             if (newL >= 0 && newR - newL >= minWidth) {
-                sl.attr("x", newL - mousePadding).attr("width", newR - newL + mousePadding);
+                sl.attr("x", newL).attr("width", newR - newL);
             }
 
         } else if (rightDrag) {
             let newL = oldL;
-            let newR = Number(d3.mouse( this )[0]);
+            let newR = Number(d3.mouse( this )[0]) + mousePadding;
 
-            console.log("rightDrag " + newL + " " + newR);
+            //console.log("rightDrag " + newL + " " + newR);
 
             if (newR <= w && newR - newL >= minWidth) {
-                sl.attr("width", newR - oldL + mousePadding);
+                sl.attr("width", newR - oldL);
             }
 
         } else {
             updateCursor(this);
         }
+
+        dataByTimeline();
+
     }
 
     function endDrag() {
@@ -309,12 +326,32 @@ function showTimeline() {
         leftDrag = false;
         rightDrag = false;
         offset = 0;
+        dataByTimeline();
+        updateEverything();
     }
 
     function leaveSlider() {
         // do nothing
     }
+}
 
+function dataByTimeline() {
+    let sl = d3.select("#slider");
+    let l = Number(sl.attr("x"));
+    let r = l + Number(sl.attr("width"));
+
+    let selectedData = d3.selectAll("rect")
+        .attr("fill", "steelblue")
+        .filter(function () {
+            let el = d3.select(this);
+            return el.attr("id").startsWith("tl") && Number(el.attr("x")) >= l && Number(el.attr("x")) + Number(el.attr("width")) <= r;
+        })
+        .attr("fill", "red")
+        .data();
+
+    // console.log(selectedData);
+
+    selected = selectedData.reduce(function (acc, current) {acc.push(...current.value); return acc}, []);
 }
 
 function handleMouseOver(d, i) {  // Add interactivity
@@ -352,12 +389,11 @@ function updateView()
 
      */
     pointPositions = [];
-    //this loop wont work
-    for (const index in data) {
+    selected.forEach(function (index) {
         updatePosition(data[index]);
-    }
+    })
 
-    console.log(pointPositions);
+    // console.log(pointPositions);
     circles.attr("cx",function(d) { return mymap.latLngToLayerPoint(d.LatLng).x});
     circles.attr("cy",function(d) { return mymap.latLngToLayerPoint(d.LatLng).y});
 
@@ -778,12 +814,12 @@ function updateView2(){
 function preprocessD(){
     setZ();
     var points = [];
-    for (const index in data) {
+    selected.forEach(function (index) {
         var d = data[index];
         kartenpunkt = ([mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y]);
         points.push({kp:kartenpunkt, LatLng: d.LatLng, NumAcc: d["Num_Acc"]});
         // console.log("accident number" + d["Num_Acc"]);
-    }
+    })
 
     D = [];
     for(var a = 0; a < points.length; a++){
