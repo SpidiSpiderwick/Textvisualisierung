@@ -17,6 +17,16 @@ var opacity = 0.5;
 var zoomlevel;
 var D;
 var z;
+/**
+ * array, welches pro Datum ein Objekt enthält, welches die Form:
+ * {
+ *     "key": DATUM,
+ *     "value": [NUM_ACC1, NUM_ACC2, ..]
+ * }
+ * hat. NUM_ACC* steht für number of accident (unique identifier)
+ * @type {*[]}
+ */
+var tlData = [];
 
 
 function onLoadPage(){
@@ -61,9 +71,11 @@ function loadFile(file){
         data = JSON.parse(reader.result);
         //so its faster for testting
 
+        var limit = 10000;
+
         var n = 0;
         for (const index in data) {
-            if (n < 10000) {
+            if (n < limit) {
                 appendInformation(data[index]);
                 n++;
             } else {
@@ -75,7 +87,205 @@ function loadFile(file){
 
         preprocessD();
         updateView2();
+        prepTimelineData();
+        showTimeline();
     }
+}
+
+function prepTimelineData() {
+    var tempData = {};
+    for (const acc_num in data) {
+        let date = data[acc_num].date;
+        if (tempData.hasOwnProperty(date)) {
+            tempData[date].push(acc_num);
+        } else {
+            tempData[date] = [acc_num];
+        }
+    }
+
+    for (var key of Object.keys(tempData).values()) {
+        tlData.push({"key": key, "value": tempData[key]});
+    }
+
+    tlData.sort(function (a, b) { return new Date(a.key) - new Date(b.key); })
+
+    // console.log(tlData);
+}
+
+function showTimeline() {
+
+    document.getElementById("timelineid").onmousedown = function (event) { event.preventDefault();};
+
+    const format = d3.timeFormat("%d. %B %Y");
+
+    const w = 600;
+    const h = 100;
+
+    const margin = {left: 30, right: 15, top: 10, bottom: 10};
+
+    const svg = d3.select("#timelineid").append("svg")
+        .attr("width", w + margin.left + margin.right)
+        .attr("height", h + margin.top + margin.bottom)
+        .on("mousedown.drag", null);
+
+    const g = svg.append("g")
+        .attr("transform", "translate(" + [margin.left, margin.top] + ")")
+        .on("mousedown.drag", null);
+
+    const y = d3.scaleLinear()
+        .domain([0, d3.max(tlData, function (d) {
+            return d.value.length;
+        })])
+        .range([h, 0]);
+
+    var yAxis = d3.axisLeft()
+        .ticks(4)
+        .scale(y);
+    g.append("g").call(yAxis);
+
+    var x = d3.scaleTime()
+        .domain(d3.extent(tlData, function(d) {
+            return new Date(d.key);
+        }))
+        .range([0,w]);
+
+    /*
+    var xAxis = d3.axisBottom()
+        .scale(x)
+        .tickFormat(function(d) { return format(new Date(d)); });
+
+    g.append("g")
+        .attr("transform", "translate(0," + h + ")")
+        .call(xAxis)
+        .selectAll("text")
+        .attr("text-anchor","end")
+        .attr("transform","rotate(-90)translate(-12,-15)")
+    */
+    let mode = 0;
+
+    if (mode === 0) {
+
+        var pad = 0;
+
+        var rect_width = w / tlData.length - 2 * pad;
+
+        var rects = g.selectAll("rect")
+            .data(tlData)
+            .enter()
+            .append("rect")
+            .attr("x", function(d, i) {
+                return pad + i * ( w / tlData.length);
+            })
+            .attr("width",  rect_width )//wir teilen die Breite gleichmäßig auf
+            .attr("fill","steelblue")
+            .attr("y", h)
+            .transition()
+            .duration(1000)
+            .attr("y", function(d) { return y(d.value.length); })
+            .attr("height", function(d) { return h-y(d.value.length); });
+
+        var title = svg.append("text")
+            .style("font-size", "20px")
+            .attr("x", w/2 + margin.left)
+            .attr("y", 30)
+            .attr("text-anchor","middle");
+
+    } else if (mode === 1) {
+
+        g.append("path")
+            .datum(tlData)
+            .attr("fill", "none")
+            .attr("stroke", "steelblue")
+            .attr("stroke-width", 1.5)
+            .attr("d", d3.line()
+                .x(function(d) {return x(new Date(d.key))})
+                .y(function(d) {return y(d.value.length)}));
+
+    }
+
+    const EPSILON = 5;
+
+    let slider = g.append("rect")
+        .attr("id", "slider")
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("width", 100)
+        .attr("height", h)
+        .attr("fill", "steelblue")
+        .attr("fill-opacity", 0.3)
+        .attr("stroke", "steelblue")
+        .attr("stroke-width", 2)
+        .on("mouseover", updateCursor)
+        .on("mousedown", startDrag)
+        .on("mousemove", drag)
+        .on("mouseup", endDrag)
+        //.on("mouseleave", endDrag)
+        ;
+
+    function updateCursor (th) {
+        th = th !== undefined ? th : this;
+        let elem = document.getElementById("slider");
+        let mouseX = Number(d3.mouse(th)[0]);
+        let sl = d3.select(th);
+        let rectLeft = Number(sl.attr("x"));
+        let rectRight = rectLeft + Number(sl.attr("width"));
+
+        if (Math.abs(rectLeft - mouseX) < EPSILON || Math.abs(rectRight - mouseX) < EPSILON) {
+            elem.style.cursor = "w-resize";
+        } else {
+            elem.style.cursor = "default";
+        }
+    }
+
+    let centerDrag = false;
+    let leftDrag = false;
+    let rightDrag = false;
+    let offset = 0;
+
+    let minWidth = 20;
+    let maxWidth = 400;
+
+    function startDrag() {
+
+        let mouseX = Number(d3.mouse(this)[0]);
+        let sl = d3.select(this);
+        let rectLeft = Number(sl.attr("x"));
+        let rectRight = rectLeft + Number(sl.attr("width"));
+
+        if (Math.abs(rectLeft - mouseX) < EPSILON) {
+            leftDrag = true;
+        } else if (Math.abs(rectRight - mouseX) < EPSILON) {
+            rightDrag = true;
+        } else {
+            centerDrag = true;
+        }
+        offset = mouseX - rectLeft;
+        //console.log(offset);
+        // save difference between mouse and left side
+    }
+
+    function drag() {
+        if (centerDrag) {
+            let sl = d3.select(this);
+            // console.log(d3.mouse(this));
+            let l = Number(d3.mouse( this )[0]) - Number(offset);
+            let r = l + Number(sl.attr("width"));
+            // console.log(l + " " + r);
+            if (l > 0 && r < w) {
+                sl.attr("x", l);
+            }
+            // set to old value + difference between mouse and left side
+        } else {
+            updateCursor(this);
+        }
+    }
+
+    function endDrag() {
+        centerDrag = false;
+        offset = 0;
+    }
+
+
 }
 
 function handleMouseOver(d, i) {  // Add interactivity
@@ -94,6 +304,7 @@ function appendInformation(d)
 {
     d.LatLng = new L.LatLng(d.lat, d.long);
     d.r = radius;
+    d.date = new Date(d.y, d.m - 1, d.d);
 }
 
 function updatePosition(d)
@@ -166,7 +377,7 @@ function calculateDataBounds(features)
     var minx = 0, miny = 0, maxx = 0, maxy = 0;
 
     //find maxima
-    for(var i=0; i<features.length; i++)
+    for(let i=0; i<features.length; i++)
     {
         if(features[i].x > maxx) maxx = features[i].x;
         if(features[i].y > maxy) maxy = features[i].y;
@@ -176,7 +387,7 @@ function calculateDataBounds(features)
     miny = maxy;
 
     //find minima
-    for(var i=0; i<features.length; i++)
+    for(let i=0; i<features.length; i++)
     {
         if(features[i].x < minx) minx = features[i].x;
         if(features[i].y < miny) miny = features[i].y;
