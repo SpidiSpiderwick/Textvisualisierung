@@ -233,7 +233,7 @@ function showTimeline() {
         if (Math.abs(rectLeft - mouseX) < EPSILON || Math.abs(rectRight - mouseX) < EPSILON) {
             elem.style.cursor = "w-resize";
         } else {
-            elem.style.cursor = "default";
+            elem.style.cursor = "move";
         }
     }
 
