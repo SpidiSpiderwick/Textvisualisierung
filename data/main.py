@@ -59,7 +59,8 @@ def processData():
     df['hr'] = hr
     del df['hrmn']
     df.columns = ['Num_Acc', 'lat', 'long', 'lum', 'atm', 'y', 'm', 'd', 'mn', 'hr']
-    df.to_json('caracteristics.json', orient='records')
+    df.set_index('Num_Acc', drop=False, inplace=True)
+    df.to_json('caracteristics.json', orient='index')
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     processData()
