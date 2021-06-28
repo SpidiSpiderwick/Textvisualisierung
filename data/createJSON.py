@@ -1,5 +1,6 @@
 import json
 import csv
+import math
 
 data = {}
 
@@ -11,6 +12,10 @@ with open("caracteristics.csv", encoding="ansi") as csvf:
             try:
                 acc = dict()
                 acc["Num_Acc"] = int(row["Num_Acc"])
+                
+                if float(row["lat"]) <= 40 or math.isnan(float(row["lat"])):
+                    raise Exception
+                
                 acc["long"] = float(row["long"][:1] + '.' + row["long"][1:])
                 acc["lat"] = float(row["lat"][:2] + '.' + row["lat"][2:])
                 acc["y"] = 2000 + int(row["an"])
@@ -25,4 +30,4 @@ with open("caracteristics.csv", encoding="ansi") as csvf:
             except Exception:
                 continue
         jsonf.write(json.dumps(d))
-        
+
