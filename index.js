@@ -630,6 +630,7 @@ function piechart(accumulated_data){
     }
     console.log(piedata);
 
+    var legende = {1:"Normal", 2:"Light rain", 3:"Heavy rain", 4:"Snow", 5:"Fog", 6:"Strong wind", 7:"Dazzling weather", 8:"Cloudy weather", 9:"Other"};
 
     var w = 300,
         h = 300,
@@ -666,6 +667,19 @@ function piechart(accumulated_data){
     arc.append("path")
         .attr("d", path)
         .attr("fill", function(d) { return ordScale(d.data.key); });
+
+    arc.selectAll("path").on('mouseover', function (d){
+        d3.select("#tooltip")
+            .style("left", d3.event.pageX + "px")
+            .style("top", d3.event.pageY + "px")
+            .style("opacity", 1)
+            .select("#value")
+            .text(legende[d.data.key]);
+    })
+        .on('mouseout', function (){
+            d3.select("#tooltip")
+                .style("opacity", 0);
+        });
 
     // Step 7
     var label = d3.arc()
