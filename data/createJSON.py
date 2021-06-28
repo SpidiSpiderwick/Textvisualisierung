@@ -16,8 +16,9 @@ with open("caracteristics.csv", encoding="ansi") as csvf:
                 if float(row["lat"]) <= 40 or math.isnan(float(row["lat"])):
                     raise Exception
                 
-                acc["long"] = float(row["long"][:1] + '.' + row["long"][1:])
-                acc["lat"] = float(row["lat"][:2] + '.' + row["lat"][2:])
+                acc["long"] = float(row["long"]) / 100000
+                
+                acc["lat"] = float(row["lat"]) / 100000
                 acc["y"] = 2000 + int(row["an"])
                 acc["m"] = int(row["mois"])
                 acc["d"] = int(row["jour"])
