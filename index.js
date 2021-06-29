@@ -651,6 +651,7 @@ function piechart(accumulated_data){
 
 
     // Step 4
+    var myColor = d3.scaleOrdinal().domain([1,2,3,4,5,6,7,8,9]).range(['#d53e4f','#f46d43','#fdae61','#fee08b','#ffffbf','#e6f598','#abdda4','#66c2a5','#3288bd'])
     var ordScale = d3.scaleOrdinal(d3.schemeCategory10 );
 
     // Step 5
@@ -669,9 +670,12 @@ function piechart(accumulated_data){
 
     arc.append("path")
         .attr("d", path)
-        .attr("fill", function(d) { return ordScale(d.data.key); });
+        .attr("fill", function(d) { return myColor(d.data.key); });
 
     arc.selectAll("path").on('mouseover', function (d){
+        d3.select(this).transition()
+            .duration('50')
+            .attr('opacity', '.85');
         d3.select("#tooltip")
             .style("left", d3.event.pageX + "px")
             .style("top", d3.event.pageY + "px")
@@ -680,6 +684,9 @@ function piechart(accumulated_data){
             .text(legende[d.data.key]);
     })
         .on('mouseout', function (){
+            d3.select(this).transition()
+                .duration('50')
+                .attr('opacity', '1');
             d3.select("#tooltip")
                 .style("opacity", 0);
         });
