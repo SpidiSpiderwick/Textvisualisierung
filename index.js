@@ -21,6 +21,7 @@ var opacity = 0.5;
 var zoomlevel;
 var D;
 var z;
+var circleSelected;
 /**
  * array of ids of accidents which are selected by the timeline slider
  */
@@ -631,19 +632,32 @@ function searchForArray(haystack, needle){
     return -1;
 }
 
-function clearExtraInfo() {
-    d3.select("#extraChart").selectAll("*").remove();
-    infodisplayed = false;
+function displayOnChange(){
+    let selectedElement = document.getElementById("select");
+    let valueSelected = selectedElement.value;
+
+    switch (valueSelected){
+        case "1":
+            piechart(circleSelected.data()[0]);
+            break;
+        case "2":
+            z = mymap.getZoom();
+            break;
+        case "3":
+            chart(circleSelected.data()[0]);
+            break;
+        default:
+            console.log("If you reach me something really went wrong");
+    }
 }
 
 function displayExtraInfo(){
 
-    let selectElement = document.getElementById("select");
-    let valueSelected = selectElement.value;
+    let selectedElement = document.getElementById("select");
+    let valueSelected = selectedElement.value;
     svg.selectAll("circle").style("fill", "red");
-    d3.select(this).style("fill", "blue");
-
-    infodisplayed = true;
+    circleSelected = d3.select(this).style("fill", "blue");
+    circleSelected.style("fill", "blue");
 
     switch (valueSelected){
         case "1":
@@ -656,7 +670,7 @@ function displayExtraInfo(){
             chart(d3.select(this).data()[0]);
             break;
         default:
-            console.log("If you reach me something realy went wrong");
+            console.log("If you reach me something really went wrong");
     }
 
 }
@@ -876,8 +890,6 @@ function chart(accumulated_data) {
 
 function updateView2(){
 
-    clearExtraInfo();
-
     calcTri();
 
     circles = g.selectAll("circle")
@@ -977,6 +989,9 @@ function setZ(){
             break;
         case 11:
             z = mymap.getZoom()*0.2;
+            break;
+        case 12:
+            z = mymap.getZoom()*0.3;
             break;
         default:
             z=mymap.getZoom();
