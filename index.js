@@ -635,7 +635,7 @@ function piechart(accumulated_data){
     var w = 300,
         h = 300,
         radius = Math.min(w, h) / 2,
-        margin = {left:20,right:15,top:80,bottom:40};
+        margin = {left:20,right:15,top:30,bottom:40};
 
     var extraSVG = d3.select("#extraChart")
         .attr("width", w+margin.left+margin.right)
@@ -643,8 +643,11 @@ function piechart(accumulated_data){
 
     extraSVG.selectAll("*").remove();
 
+    var top = (w / 2)+margin.top;
+    var bottom = (h / 2)+margin.bottom;
+
     var g = extraSVG.append("g")
-        .attr("transform", "translate(" + w / 2 + "," + h / 2 + ")");
+        .attr("transform", "translate(" + top + "," + bottom + ")");
 
 
     // Step 4
@@ -693,6 +696,8 @@ function piechart(accumulated_data){
         .text(function(d) { return d.data.key; })
         .style("font-family", "arial")
         .style("font-size", 15);
+
+
 }
 
 

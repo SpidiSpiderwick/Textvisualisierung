@@ -1,12 +1,18 @@
+.w3-padding-128{padding-top:64px!important;padding-bottom:64px!important}
+
+.center {
+    margin: auto;
+    width: 50%;
+}
+
 body {
     background-color: #FFFFFF;
     font-family: 'Open Sans', sans-serif;
 }
 
 #mapid {
-    height: 700px;
-    width: 700px;
-    float: left;
+    height: 800px;
+    width: auto;
 }
 
 #extraDiv {
