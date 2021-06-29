@@ -2,6 +2,8 @@
  * example function
  */
 
+let mode = 0;
+
 var data;
 
 var mymap;
@@ -123,19 +125,20 @@ function showTimeline() {
 
     document.getElementById("timelineid").onmousedown = function (event) { event.preventDefault();};
 
-    const format = d3.timeFormat("%d. %B %Y");
-
     const w = 1000;
     const h = 100;
 
-    const margin = {left: 30, right: 15, top: 10, bottom: 30};
+    const margin = {left: 80, right: 80, top: 20, bottom: 30};
 
     const svg = d3.select("#timelineid").append("svg")
         .attr("width", w + margin.left + margin.right)
         .attr("height", h + margin.top + margin.bottom)
         .on("mousedown.drag", null);
 
-    const g = svg.append("g")
+
+    const upperText = svg.append("g").attr("transform", "translate(" + [margin.left, 0] + ")");
+
+    const timeline = svg.append("g")
         .attr("transform", "translate(" + [margin.left, margin.top] + ")")
         .on("mousedown.drag", null);
 
@@ -148,7 +151,7 @@ function showTimeline() {
     var yAxis = d3.axisLeft()
         .ticks(4)
         .scale(y);
-    g.append("g").call(yAxis);
+    timeline.append("g").call(yAxis);
 
     var x = d3.scaleTime()
         .domain(d3.extent(tlData, function(d) {
@@ -167,14 +170,12 @@ function showTimeline() {
             }
         });
 
-    g.append("g")
+    timeline.append("g")
         .attr("transform", "translate(0," + h + ")")
         .call(xAxis)
         .selectAll("text")
         //.attr("text-anchor","end")
         //.attr("transform","rotate(-90)translate(-12,-15)")
-
-    let mode = 0;
 
     if (mode === 0) {
 
@@ -182,7 +183,7 @@ function showTimeline() {
 
         var rect_width = w / tlData.length - 2 * pad;
 
-        var rects = g.selectAll("rect")
+        var rects = timeline.selectAll("rect")
             .data(tlData)
             .enter()
             .append("rect")
@@ -198,7 +199,7 @@ function showTimeline() {
             .attr("y", function(d) { return y(d.value.length); })
             .attr("height", function(d) { return h-y(d.value.length); });
 
-        rects = g.selectAll("rect");
+        rects = timeline.selectAll("rect");
 
         console.log("hmm");
 
@@ -214,11 +215,11 @@ function showTimeline() {
 
     } else if (mode === 1) {
 
-        g.append("path")
+        timeline.append("path")
             .datum(tlData)
             .attr("fill", "none")
             .attr("stroke", "steelblue")
-            .attr("stroke-width", 1.5)
+            .attr("stroke-width", 0.5)
             .attr("d", d3.line()
                 .x(function(d) {return x(new Date(d.key))})
                 .y(function(d) {return y(d.value.length)}));
@@ -227,9 +228,9 @@ function showTimeline() {
 
     const EPSILON = 5;
 
-    let slider = g.append("rect")
+    let slider = timeline.append("rect")
         .attr("id", "slider")
-        .attr("x", 0)
+        .attr("x", 30)
         .attr("y", 0)
         .attr("width", 35)
         .attr("height", h)
@@ -238,16 +239,20 @@ function showTimeline() {
         .attr("stroke", "steelblue")
         .attr("stroke-width", 2)
         .on("mouseover", updateCursor)
+        .on("mouseenter", enter)
+        .on("mousemove", updateCursor)
         .on("mousedown", startDrag)
-        .on("mousemove", drag)
-        .on("mouseup", endDrag)
-        .on("mouseleave", leaveSlider)
+        //.on("mouseup", endDrag)
+        //.on("mouseleave", leaveSlider)
         ;
 
-    function updateCursor (th) {
-        th = th !== undefined ? th : this;
+    function enter() {
+        updateCursor();
+    }
+
+    function updateCursor () {
         let elem = document.getElementById("slider");
-        let mouseX = Number(d3.mouse(th)[0]);
+        let mouseX = Number(d3.mouse(slider.node())[0]);
         let rectLeft = Number(slider.attr("x"));
         let rectRight = rectLeft + Number(slider.attr("width"));
 
@@ -263,7 +268,7 @@ function showTimeline() {
     let rightDrag = false;
     let offset = 0;
 
-    let mousePadding = 10;
+    let mousePadding = 0;
 
     let minWidth = 20;
     let maxWidth = 400;
@@ -287,82 +292,123 @@ function showTimeline() {
     }
 
     function drag() {
-        // console.log(d3.mouse(this));
-        let oldL = Number(slider.attr("x"));
-        let oldR = Number(slider.attr("x")) + Number(slider.attr("width"));
+        if (centerDrag || leftDrag || rightDrag) {
+            // console.log(d3.mouse(this));
+            let oldL = Number(slider.attr("x"));
+            let oldR = Number(slider.attr("x")) + Number(slider.attr("width"));
 
-        if (centerDrag) {
-            let newL = Number(d3.mouse( this )[0]) - Number(offset);
-            let newR = newL + Number(slider.attr("width"));
-            // console.log(l + " " + r);
-            if (newL > 0 && newR <= w) {
-                slider.attr("x", newL);
+            // console.log(this);
+
+            let mouseX = d3.mouse(slider.node())[0];
+
+            if (centerDrag) {
+                let newL = Number(mouseX) - Number(offset);
+                let width = Number(slider.attr("width"))
+                let newR = newL + width;
+                // console.log(l + " " + r);
+                if (newL <= 0) {
+                    slider.attr("x", 0);
+                } else if (newR >= w) {
+                    slider.attr("x", w - width);
+                } else {
+                    slider.attr("x", newL);
+                }
+            } else if (leftDrag) {
+                let newL = Number(mouseX) - mousePadding;
+                let newR = oldR;
+
+                //console.log("leftDrag " + newL + " " + newR);
+
+                if (newL <= 0) {
+                    slider.attr("x", 0).attr("width", newR);
+                } else if (newR - newL <= minWidth) {
+                    slider.attr("x", newR - minWidth).attr("width", minWidth);
+                } else {
+                    slider.attr("x", newL).attr("width", newR - newL);
+                }
+
+            } else if (rightDrag) {
+                let newL = oldL;
+                let newR = Number(mouseX) + mousePadding;
+
+                //console.log("rightDrag " + newL + " " + newR);
+
+                if (newR >= w) {
+                    slider.attr("width", w - newL);
+                } else if (newR - newL <= minWidth) {
+                    slider.attr("width", minWidth);
+                } else {
+                    slider.attr("width", newR - newL);
+                }
+
             }
-        } else if (leftDrag) {
-            let newL = Number(d3.mouse( this )[0]) - mousePadding;
-            let newR = oldR;
 
-            //console.log("leftDrag " + newL + " " + newR);
-
-            if (newL >= 0 && newR - newL >= minWidth) {
-                slider.attr("x", newL).attr("width", newR - newL);
-            }
-
-        } else if (rightDrag) {
-            let newL = oldL;
-            let newR = Number(d3.mouse( this )[0]) + mousePadding;
-
-            //console.log("rightDrag " + newL + " " + newR);
-
-            if (newR <= w && newR - newL >= minWidth) {
-                slider.attr("width", newR - oldL);
-            }
-
-        } else {
-            updateCursor(this);
+            highlightSliderRects(slider, rects, xToI, upperText);
         }
-
-        highlightSliderRects(slider, rects, xToI);
-
     }
 
     function endDrag() {
-        centerDrag = false;
-        leftDrag = false;
-        rightDrag = false;
-        offset = 0;
-        dataByTimeline(slider, rects, xToI);
-        updateEverything();
+        if (centerDrag || leftDrag || rightDrag) {
+            centerDrag = false;
+            leftDrag = false;
+            rightDrag = false;
+            offset = 0;
+            dataByTimeline(slider, rects, xToI, upperText);
+            updateEverything();
+        }
     }
 
     function leaveSlider() {
         // do nothing
     }
 
-    dataByTimeline(slider, rects, xToI);
+    d3.select("body")
+        .on("mousemove", drag)
+        .on("mouseup", endDrag);
+
+    dataByTimeline(slider, rects, xToI, upperText);
 
 }
 
-function highlightSliderRects(slider, rects, xToI) {
+function highlightSliderRects(slider, rects, xToI, upperText) {
     let l = Number(slider.attr("x"));
     let r = l + Number(slider.attr("width"));
 
-    let start = Math.floor(xToI(l));
-    let end = Math.ceil(xToI(r));
+    let start = Math.max(Math.floor(xToI(l)), 0);
+    let end = Math.min(Math.ceil(xToI(r)), tlData.length - 1);
 
-    rects
+    let firstDate = new Date(tlData[start].key);
+    let lastDate = new Date(tlData[end].key);
+
+    console.log(firstDate);
+    console.log(lastDate);
+
+    upperText.selectAll("*").remove();
+
+    upperText.append("text")
+        .text(firstDate.toLocaleDateString())
+        .attr("x", function () {
+            return l - this.getComputedTextLength();
+        })
+        .attr("y", 15);
+
+    upperText.append("text")
+        .text(lastDate.toLocaleDateString())
+        .attr("x", r)
+        .attr("y", 15);
+
+    return rects
         .attr("fill", function (d, i) { return (i >= start && i <= end) ? "red" : "steelblue" });
 }
 
-function dataByTimeline(slider, rects, xToI) {
+function dataByTimeline(slider, rects, xToI, upperText) {
     let l = Number(slider.attr("x"));
     let r = l + Number(slider.attr("width"));
 
-    let start = Math.floor(xToI(l));
-    let end = Math.ceil(xToI(r));
+    let start = Math.max(Math.floor(xToI(l)), 0);
+    let end = Math.min(Math.ceil(xToI(r)), tlData.length - 1);
 
-    let selectedData = rects
-        .attr("fill", function (d, i) { return (i >= start && i <= end) ? "red" : "steelblue" })
+    let selectedData = highlightSliderRects(slider, rects, xToI, upperText)
         .filter(function (d, i) { return i >= start && i <= end})
         .data();
 

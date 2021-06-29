@@ -10,14 +10,12 @@ with open("caracteristics.csv", encoding="ansi") as csvf:
         d = {}
         for row in csvReader:
             try:
+                if float(row["lat"]) <= 40 or math.isnan(float(row["lat"])) or int(row["an"]) < 14:
+                    raise Exception
+
                 acc = dict()
                 acc["Num_Acc"] = int(row["Num_Acc"])
-                
-                if float(row["lat"]) <= 40 or math.isnan(float(row["lat"])):
-                    raise Exception
-                
                 acc["long"] = float(row["long"]) / 100000
-                
                 acc["lat"] = float(row["lat"]) / 100000
                 acc["y"] = 2000 + int(row["an"])
                 acc["m"] = int(row["mois"])
