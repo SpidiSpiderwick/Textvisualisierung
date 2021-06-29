@@ -6,6 +6,8 @@ let mode = 0;
 
 var data;
 
+let infodisplayed = false;
+
 var mymap;
 var svg;
 var g;
@@ -129,6 +131,8 @@ function showTimeline() {
     const h = 100;
 
     const margin = {left: 80, right: 80, top: 20, bottom: 30};
+
+    d3.select("#timelineid").selectAll("*").remove();
 
     const svg = d3.select("#timelineid").append("svg")
         .attr("width", w + margin.left + margin.right)
@@ -627,12 +631,19 @@ function searchForArray(haystack, needle){
     return -1;
 }
 
+function clearExtraInfo() {
+    d3.select("#extraChart").selectAll("*").remove();
+    infodisplayed = false;
+}
+
 function displayExtraInfo(){
 
     let selectElement = document.getElementById("select");
     let valueSelected = selectElement.value;
     svg.selectAll("circle").style("fill", "red");
     d3.select(this).style("fill", "blue");
+
+    infodisplayed = true;
 
     switch (valueSelected){
         case "1":
@@ -864,6 +875,8 @@ function chart(accumulated_data) {
 }
 
 function updateView2(){
+
+    clearExtraInfo();
 
     calcTri();
 
