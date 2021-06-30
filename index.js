@@ -81,7 +81,8 @@ function loadFile(file){
         data = JSON.parse(reader.result);
         //so its faster for testting
 
-        var limit = Number.MAX_SAFE_INTEGER;
+        //var limit = Number.MAX_SAFE_INTEGER;
+        let limit = 10;
 
         var n = 0;
         for (const index in data) {
@@ -116,12 +117,16 @@ function prepTimelineData() {
     }
 
     for (var key of Object.keys(tempData).values()) {
-        tlData.push({"key": key, "value": tempData[key]});
+        tlData.push({"key": new Date(key), "value": tempData[key]});
     }
 
-    tlData.sort(function (a, b) { return new Date(a.key) - new Date(b.key); })
+    tlData.sort(function (a, b) { return a.key - b.key; })
 
     // console.log(tlData);
+}
+
+function daysBetween(d1, d2) {
+    return Math.floor((d1 >= d2 ? (d1.getTime() - d2.getTime()) : (d2.getTime() - d1.getTime())) / (1000 * 3600 * 24) + 1);
 }
 
 function showTimeline() {
@@ -131,17 +136,14 @@ function showTimeline() {
     const w = 1000;
     const h = 100;
 
-    const margin = {left: 80, right: 80, top: 20, bottom: 30};
+    const margin = {left: 80, right: 80, top: 20, bottom: 60};
 
-    d3.select("#timelineid").selectAll("*").remove();
+    d3.select("#timelineid").selectAll("svg").remove();
 
     const svg = d3.select("#timelineid").append("svg")
         .attr("width", w + margin.left + margin.right)
         .attr("height", h + margin.top + margin.bottom)
         .on("mousedown.drag", null);
-
-
-    const upperText = svg.append("g").attr("transform", "translate(" + [margin.left, 0] + ")");
 
     const timeline = svg.append("g")
         .attr("transform", "translate(" + [margin.left, margin.top] + ")")
@@ -158,10 +160,16 @@ function showTimeline() {
         .scale(y);
     timeline.append("g").call(yAxis);
 
+    let xDomain = d3.extent(tlData, function(d) {return d.key;});
+
+    xDomain[1] = new Date(xDomain[1]);
+    xDomain[1].setDate(xDomain[1].getDate() + 1);
+    xDomain[0] = new Date(xDomain[0]);
+
+    let num_of_days = daysBetween(xDomain[0], xDomain[1]);
+
     var x = d3.scaleTime()
-        .domain(d3.extent(tlData, function(d) {
-            return new Date(d.key);
-        }))
+        .domain(xDomain)
         .range([0,w]);
 
 
@@ -186,7 +194,7 @@ function showTimeline() {
 
         var pad = 0;
 
-        var rect_width = w / tlData.length - 2 * pad;
+        var rect_width = w / num_of_days;
 
         var rects = timeline.selectAll("rect")
             .data(tlData)
@@ -194,7 +202,8 @@ function showTimeline() {
             .append("rect")
             .attr("id", function(d, i) {return "tl" + i})
             .attr("x", function(d, i) {
-                return pad + i * ( w / tlData.length);
+                return x(d.key);
+                //return pad + i * ( w / tlData.length);
             })
             .attr("width",  rect_width )//wir teilen die Breite gleichmäßig auf
             .attr("fill","steelblue")
@@ -226,12 +235,12 @@ function showTimeline() {
             .attr("stroke", "steelblue")
             .attr("stroke-width", 0.5)
             .attr("d", d3.line()
-                .x(function(d) {return x(new Date(d.key))})
+                .x(function(d) {return x(d.key)})
                 .y(function(d) {return y(d.value.length)}));
 
     }
 
-    const EPSILON = 5;
+    const EPSILON = 1;
 
     let slider = timeline.append("rect")
         .attr("id", "slider")
@@ -244,16 +253,12 @@ function showTimeline() {
         .attr("stroke", "steelblue")
         .attr("stroke-width", 2)
         .on("mouseover", updateCursor)
-        .on("mouseenter", enter)
+        .on("mouseenter", updateCursor)
         .on("mousemove", updateCursor)
         .on("mousedown", startDrag)
         //.on("mouseup", endDrag)
         //.on("mouseleave", leaveSlider)
         ;
-
-    function enter() {
-        updateCursor();
-    }
 
     function updateCursor () {
         let elem = document.getElementById("slider");
@@ -275,7 +280,7 @@ function showTimeline() {
 
     let mousePadding = 0;
 
-    let minWidth = 20;
+    let minWidth = rect_width;
     let maxWidth = 400;
 
     function startDrag() {
@@ -296,6 +301,9 @@ function showTimeline() {
         // save difference between mouse and left side
     }
 
+    function roundDown(x) {return Math.floor(x / rect_width) * rect_width;}
+    function roundUp(x) {return Math.ceil(x / rect_width) * rect_width;}
+
     function drag() {
         if (centerDrag || leftDrag || rightDrag) {
             // console.log(d3.mouse(this));
@@ -307,8 +315,8 @@ function showTimeline() {
             let mouseX = d3.mouse(slider.node())[0];
 
             if (centerDrag) {
-                let newL = Number(mouseX) - Number(offset);
-                let width = Number(slider.attr("width"))
+                let newL = roundDown(Number(mouseX) - Number(offset));
+                let width = roundDown(Number(slider.attr("width")));
                 let newR = newL + width;
                 // console.log(l + " " + r);
                 if (newL <= 0) {
@@ -319,7 +327,7 @@ function showTimeline() {
                     slider.attr("x", newL);
                 }
             } else if (leftDrag) {
-                let newL = Number(mouseX) - mousePadding;
+                let newL = roundDown(Number(mouseX) - mousePadding);
                 let newR = oldR;
 
                 //console.log("leftDrag " + newL + " " + newR);
@@ -334,7 +342,7 @@ function showTimeline() {
 
             } else if (rightDrag) {
                 let newL = oldL;
-                let newR = Number(mouseX) + mousePadding;
+                let newR = roundUp(Number(mouseX) + mousePadding);
 
                 //console.log("rightDrag " + newL + " " + newR);
 
@@ -348,7 +356,7 @@ function showTimeline() {
 
             }
 
-            highlightSliderRects(slider, rects, xToI, upperText);
+            highlightSliderRects(slider, rects, x.invert, startDP, endDP, lowerText);
         }
     }
 
@@ -358,7 +366,7 @@ function showTimeline() {
             leftDrag = false;
             rightDrag = false;
             offset = 0;
-            dataByTimeline(slider, rects, xToI, upperText);
+            dataByTimeline(slider, rects, x.invert, startDP, endDP, lowerText);
             updateEverything();
         }
     }
@@ -371,54 +379,91 @@ function showTimeline() {
         .on("mousemove", drag)
         .on("mouseup", endDrag);
 
-    dataByTimeline(slider, rects, xToI, upperText);
+    const startDP = datepicker("#leftText",
+        {id: 1,
+            onSelect: troll,
+            onShow: showSibling,
+            dateSelected: new Date("2007-06-30"),
+            position: "tl",
+            formatter: (input, date, instance) => {
+                input.value = date.toLocaleDateString();
+            },
+            disabler: date => date < xDomain[0] || date > xDomain[1]
+        });
+    startDP.calendarContainer.style.setProperty('font-size', '0.7rem');
+
+    const endDP = datepicker("#rightText",
+        {id: 1,
+            onSelect: troll,
+            onShow: showSibling,
+            //onHide: endHide,
+            dateSelected: new Date("2008-06-30"),
+            position: "tr",
+            formatter: (input, date, instance) => {
+                input.value = date.toLocaleDateString();
+            },
+            disabler: date => date < xDomain[0] || date > xDomain[1]
+        });
+    endDP.calendarContainer.style.setProperty('font-size', '0.7rem');
+
+    function troll (instance) {
+        let range = instance.getRange();
+        let startX = x(range.start);
+        let width = x(range.end) - startX;
+        slider.attr("x", startX).attr("width", width);
+        dataByTimeline(slider, rects, x.invert, startDP, endDP, lowerText);
+        updateEverything();
+        instance.show();
+    }
+
+    function showSibling (instance) {
+        if(instance.sibling.calendarContainer.classList.contains("qs-hidden")) {
+            instance.sibling.show();
+        }
+    }
+
+    const startElem = document.getElementById("leftText");
+    const endElem = document.getElementById("rightText");
+
+    startElem.onclick = function (event) {startDP.show(); event.stopPropagation();};
+    endElem.onclick = function (event) {endDP.show(); event.stopPropagation()};
+
+    // startDP.calendarContainer.onclick = function (event) { startDP.calendarContainer.onclick(); event.stopPropagation(); };
+    // endDP.calendarContainer.onclick = function (event) { endDP.calendarContainer.onclick(); event.stopPropagation(); };
+
+    const lowerText = document.getElementById("daysChosen");
+
+    dataByTimeline(slider, rects, x.invert, startDP, endDP, lowerText);
 
 }
 
-function highlightSliderRects(slider, rects, xToI, upperText) {
+function highlightSliderRects(slider, rects, x_invert, startDP, endDP, lowerText, filter=false) {
     let l = Number(slider.attr("x"));
     let r = l + Number(slider.attr("width"));
 
-    let start = Math.max(Math.floor(xToI(l)), 0);
-    let end = Math.min(Math.ceil(xToI(r)), tlData.length - 1);
+    let firstDate = x_invert(l);
+    firstDate.setHours(0, 0, 0, 0);
 
-    let firstDate = new Date(tlData[start].key);
-    let lastDate = new Date(tlData[end].key);
+    let lastDate = x_invert(r);
+    lastDate.setHours(0, 0, 0, 0);
 
     console.log(firstDate);
     console.log(lastDate);
 
-    upperText.selectAll("*").remove();
+    startDP.setDate();
+    endDP.setDate();
+    startDP.setDate(firstDate, true);
+    endDP.setDate(lastDate, true);
 
-    upperText.append("text")
-        .text(firstDate.toLocaleDateString())
-        .attr("x", function () {
-            return l - this.getComputedTextLength();
-        })
-        .attr("y", 15);
+    lowerText.innerHTML = `${daysBetween(firstDate, lastDate)} days chosen`;
 
-    upperText.append("text")
-        .text(lastDate.toLocaleDateString())
-        .attr("x", r)
-        .attr("y", 15);
+    rects.attr("fill", function (d, i) { return (d.key >= firstDate && d.key <= lastDate) ? "red" : "steelblue" });
 
-    return rects
-        .attr("fill", function (d, i) { return (i >= start && i <= end) ? "red" : "steelblue" });
+    return filter ? rects.filter(function (d, i) { return d.key >= firstDate && d.key <= lastDate}) : rects;
 }
 
-function dataByTimeline(slider, rects, xToI, upperText) {
-    let l = Number(slider.attr("x"));
-    let r = l + Number(slider.attr("width"));
-
-    let start = Math.max(Math.floor(xToI(l)), 0);
-    let end = Math.min(Math.ceil(xToI(r)), tlData.length - 1);
-
-    let selectedData = highlightSliderRects(slider, rects, xToI, upperText)
-        .filter(function (d, i) { return i >= start && i <= end})
-        .data();
-
-    // console.log(selectedData);
-
+function dataByTimeline(slider, rects, x_invert, startDP, endDP, lowerText) {
+    let selectedData = highlightSliderRects(slider, rects, x_invert, startDP, endDP, lowerText, true).data();
     selected = selectedData.reduce(function (acc, current) {acc.push(...current.value); return acc}, []);
 }
 

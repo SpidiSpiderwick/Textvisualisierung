@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
       integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
       crossorigin=""/>
+<link rel="stylesheet" href="https://unpkg.com/js-datepicker/dist/datepicker.min.css">
 <style>
   body,h1,h2,h3,h4,h5,h6 {font-family: "Lato", sans-serif}
   .w3-bar,h1,button {font-family: "Montserrat", sans-serif}
@@ -45,7 +46,14 @@
   <div class="w3-twothird w3-center">
     <h1>Map</h1>
       <div class="center" id="mapid"></div>
-      <div class="w3-padding-16" id="timelineid"></div>
+      <div class="w3-padding-16" id="timelineid">
+        <div id="upperText">
+          <input type="text" id="leftText">
+          <label>-</label>
+          <input type="text" id="rightText">
+        </div>
+        <label id="daysChosen"></label>
+      </div>
   </div>
 
     <div class="w3-center w3-third" id="extraInfo">
@@ -113,6 +121,8 @@
     }
   }
 </script>
+
+<script src="https://unpkg.com/js-datepicker"></script>
 
 </body>
 </html>
