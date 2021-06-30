@@ -56,6 +56,8 @@
             <option value = "1">Wetter</option>
             <option value = "2">Licht</option>
             <option value = "3">Datum</option>
+            <option value = "4">Verletzung</option>
+            <option value = "5">Untergrund</option>
           </select>
         </label></div>
 
@@ -82,6 +84,26 @@
   </p>
   <p><span id="value"></span></p>
 </div>
+
+<div id="tooltipInjury" class="hidden">
+  <p><strong>Injury was:</strong>
+  </p>
+  <p><span id="valueInjury"></span></p>
+</div>
+
+<div id="tooltipLight" class="hidden">
+  <p><strong>The lighting was:</strong>
+  </p>
+  <p><span id="valueLight"></span></p>
+</div>
+
+<div id="tooltipSurf" class="hidden">
+  <p><strong>The surface was:</strong>
+  </p>
+  <p><span id="valueSurf"></span></p>
+</div>
+
+<button class="w3-button w3-black w3-padding-large w3-large w3-margin-top" onclick="loadGeoJson()">Magic</button>
 
 <!-- Second Grid -->
 <div class="w3-row-padding w3-light-grey w3-padding-64 w3-container">
