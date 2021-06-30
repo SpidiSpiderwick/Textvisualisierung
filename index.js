@@ -82,8 +82,8 @@ function loadFile(file){
         data = JSON.parse(reader.result);
         //so its faster for testting
 
-        //var limit = Number.MAX_SAFE_INTEGER;
-        let limit = 10;
+        var limit = Number.MAX_SAFE_INTEGER;
+        //let limit = 10;
 
         var n = 0;
         for (const index in data) {
