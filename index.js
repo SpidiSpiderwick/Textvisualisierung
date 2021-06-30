@@ -931,8 +931,8 @@ function preprocessD(){
     selected.forEach(function (index) {
         var d = data[index];
         kartenpunkt = ([mymap.latLngToLayerPoint(d.LatLng).x, mymap.latLngToLayerPoint(d.LatLng).y]);
-        points.push({kp:kartenpunkt, LatLng: d.LatLng, NumAcc: d["Num_Acc"]});
-        // console.log("accident number" + d["Num_Acc"]);
+        points.push({kp:kartenpunkt, LatLng: d.LatLng, NumAcc: index});
+        // console.log("accident number" + index);
     })
 
     D = [];
