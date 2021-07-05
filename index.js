@@ -41,6 +41,7 @@ var tlData = [];
 
 
 function onLoadPage(){
+    document.getElementById("stLoad").addEventListener("click", standardLoad, false);
     initMap();
 }
 
