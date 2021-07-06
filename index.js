@@ -49,7 +49,7 @@ function onLoadPage(){
  */
 
 function initMap() {
-    mymap = L.map('mapid').setView([46.54, 2.44], 6);
+    mymap = L.map('mapid').setView([48.856614, 2.3522219], 15); //([46.54, 2.44], 6)
     L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1Ijoic3BpZGVyd2ljayIsImEiOiJja3BndGhsem8ya2l3Mm5ubG9qdmg1Y2I0In0.VLvrurO3hpyg39BlqImU8w', {
         attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery Â© <a href="https://www.mapbox.com/">Mapbox</a>',
         maxZoom: 18,
@@ -245,7 +245,7 @@ function showTimeline() {
 
     let slider = timeline.append("rect")
         .attr("id", "slider")
-        .attr("x", 30)
+        .attr("x", 965)
         .attr("y", 0)
         .attr("width", 35)
         .attr("height", h)
@@ -752,7 +752,8 @@ function pieLum(accumulated_data){
         piedata.push({"key": key, "value": count_options[key]});
     }
     var legende = {1:"Full day", 2:"Twilight or dawn", 3:"Night without public lighting", 4:"Night with public lighting not lit", 5:"Fog", 6:"Night with public lighting on"};
-    piechart(piedata, legende, '#tooltipLight', '#valueLight');
+    var myColor = d3.scaleOrdinal().domain([1,2,3,4,5,6]).range(['#d73027','#fc8d59','#fee08b','#d9ef8b','#91cf60','#1a9850']);
+    piechart(piedata, legende, '#tooltipLight', '#valueLight', myColor);
 }
 
 function pieWeather(accumulated_data){
@@ -774,7 +775,12 @@ function pieWeather(accumulated_data){
         piedata.push({"key": key, "value": count_options[key]});
     }
     var legende = {1:"Normal", 2:"Light rain", 3:"Heavy rain", 4:"Snow", 5:"Fog", 6:"Strong wind", 7:"Dazzling weather", 8:"Cloudy weather", 9:"Other"};
-    piechart(piedata, legende, '#tooltip', '#value');
+    var myColor = d3.scaleOrdinal().domain([1,2,3,4,5,6,7,8,9]).range(['#e74c3c','#e66b4f','#f39c12','#f1c40f','#16a085','#2ecc71','#3498db','#8e44ad','#2c3e50']);
+    var myColor = d3.scaleOrdinal().domain([1,2,3,4,5,6,7,8,9]).range(['#d53e4f','#f46d43','#fdae61','#fee08b','#e6f598','#abdda4','#66c2a5','#3288bd','#ffffbf']);
+    var myColor = d3.scaleOrdinal().domain([1,2,3,4,5,6,7,8,9]).range([['#d73027','#f46d43','#fdae61','#fee090','#ffffbf','#e0f3f8','#abd9e9','#74add1','#4575b4']]);
+    var myColor = d3.scaleOrdinal().domain([1,2,3,4,5,6,7,8,9]).range(['#d73027','#abd9e9','#74add1','#4575b4','#ffffbf','#e0f3f8','#f46d43','#fdae61','#fee090']);
+
+    piechart(piedata, legende, '#tooltip', '#value', myColor);
 }
 
 function chart(accumulated_data) {
@@ -905,7 +911,8 @@ function pieInjury(accumulated_data){
         piedata.push({"key": key, "value": count_options[key]});
     }
     var legende = {1:"Unscathed", 2:"Killed", 3:"Hospilalized wounded", 4:"Light injury"};
-    piechart(piedata, legende, '#tooltipInjury', '#valueInjury')
+    var myColor = d3.scaleOrdinal().domain([1,2,3,4]).range(['#1a9850','#d53e4f','#f46d43','#66bd63']);
+    piechart(piedata, legende, '#tooltipInjury', '#valueInjury',myColor)
 
 }
 
@@ -920,18 +927,23 @@ function pieSurf(accumulated_data){
         if (acc["surf"] in count_options){
             count_options[acc["surf"]] += 1;
         }else{
-            count_options[acc["surf"]] = 1;
+            if(parseInt(acc["surf"]) > 0){
+                count_options[acc["surf"]] = 1;
+            }
+
         }
     }
     var piedata = [];
     for (var key of Object.keys(count_options).values()) {
         piedata.push({"key": key, "value": count_options[key]});
     }
+    console.log(piedata);
     var legende = {1:"Normal", 2:"Wet", 3:"Puddles", 4:"Flooded", 5:"Snow", 6:"Mud", 7:"Icy", 8:"Fat-Oil", 9:"Other"};
-    piechart(piedata, legende, '#tooltipSurf', '#valueSurf')
+    var myColor = d3.scaleOrdinal().domain([1,2,3,4,5,6,7,8,9]).range(['#d73027','#f46d43','#fdae61','#fee08b','#d9ef8b','#a6d96a','#66bd63','#1a9850','#ffffbf']);
+    piechart(piedata, legende, '#tooltipSurf', '#valueSurf', myColor)
 }
 
-function piechart(piedata, legende, tooltip, value){
+function piechart(piedata, legende, tooltip, value, myColor){
 
     var w = 300,
         h = 300,
@@ -952,7 +964,6 @@ function piechart(piedata, legende, tooltip, value){
 
 
     // Step 4
-    var myColor = d3.scaleOrdinal().domain([1,2,3,4,5,6,7,8,9]).range(['#d53e4f','#f46d43','#fdae61','#fee08b','#ffffbf','#e6f598','#abdda4','#66c2a5','#3288bd'])
     var ordScale = d3.scaleOrdinal(d3.schemeCategory10 );
 
     // Step 5
@@ -993,6 +1004,10 @@ function piechart(piedata, legende, tooltip, value){
         });
 
     // Step 7
+    var gesa = 0;
+    piedata.forEach(function (d){
+        gesa = gesa + d.value;
+    })
     var label = d3.arc()
         .outerRadius(radius)
         .innerRadius(0);
@@ -1001,10 +1016,9 @@ function piechart(piedata, legende, tooltip, value){
         .attr("transform", function(d) {
             return "translate(" + label.centroid(d) + ")";
         })
-        .text(function(d) { return d.data.key; })
+        .text(function(d) { return ((((d.data.value)/gesa).toFixed(2))*100).toFixed(0) + '%'; })
         .style("font-family", "arial")
-        .style("font-size", 15);
-
+        .style("font-size", 12);
 
 }
 
@@ -1114,8 +1128,14 @@ function setZ(){
         case 12:
             z = mymap.getZoom()*0.3;
             break;
+        case 13:
+            z = mymap.getZoom()*0.3;
+            break;
+        case 14:
+            z = mymap.getZoom()*0.275;
+            break;
         default:
-            z=mymap.getZoom();
+            z=mymap.getZoom()*0.15;
 
     }
 }
