@@ -41,6 +41,7 @@ var tlData = [];
 
 
 function onLoadPage(){
+    document.getElementById("stLoad").addEventListener("click", standardLoad, false);
     initMap();
 }
 
@@ -71,6 +72,16 @@ function initMap() {
 
 }
 
+async function standardLoad() {
+    let response = await fetch("data/full_data.json");
+    if (response.status !== 200) {
+        console.log("could not standard load");
+    } else {
+        let text_data = await response.text();
+        loadJSON(text_data);
+    }
+}
+
 /**
  * Loads Data when file is selected
  * @param file
@@ -79,31 +90,35 @@ function loadFile(file){
     let reader = new FileReader();
     reader.readAsBinaryString(file); //liest die Datei als String ein
     reader.onloadend = function(event){ //gibt an was passiert, wenn die Datei fertig geladen wurde
-        data = JSON.parse(reader.result);
-        //so its faster for testting
-
-        var limit = Number.MAX_SAFE_INTEGER;
-        //let limit = 10;
-
-        var n = 0;
-        for (const index in data) {
-            if (n < limit) {
-                appendInformation(data[index]);
-                n++;
-            } else {
-                delete data[index];
-            }
-        }
-
-        console.log(data);
-
-        prepTimelineData();
-        showTimeline();
-        console.log("timeline done?");
-        preprocessD();
-        updateView2();
-
+        loadJSON(reader.result);
     }
+}
+
+function loadJSON(file_text) {
+    data = JSON.parse(file_text);
+    //so its faster for testting
+
+    var limit = Number.MAX_SAFE_INTEGER;
+    //let limit = 10;
+
+    var n = 0;
+    for (const index in data) {
+        if (n < limit) {
+            appendInformation(data[index]);
+            n++;
+        } else {
+            delete data[index];
+        }
+    }
+
+    console.log(data);
+
+    prepTimelineData();
+    showTimeline();
+    console.log("timeline done?");
+    preprocessD();
+    updateView2();
+
 }
 
 function prepTimelineData() {
