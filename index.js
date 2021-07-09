@@ -50,7 +50,7 @@ function onLoadPage(){
  */
 
 function initMap() {
-    mymap = L.map('mapid').setView([48.856614, 2.3522219], 15); //([46.54, 2.44], 6)
+    mymap = L.map('mapid').setView([46.54, 2.44], 6); //  [48.856614, 2.3522219], 15
     L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1Ijoic3BpZGVyd2ljayIsImEiOiJja3BndGhsem8ya2l3Mm5ubG9qdmg1Y2I0In0.VLvrurO3hpyg39BlqImU8w', {
         attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery Â© <a href="https://www.mapbox.com/">Mapbox</a>',
         maxZoom: 18,
@@ -726,7 +726,8 @@ function displayExtraInfo(){
 
     svg.selectAll("circle").style("fill", "red");
     circleSelected = d3.select(this).style("fill", "blue");
-
+    console.log(d3.select(this).data())
+    document.getElementById('number').innerHTML = 'Selektiert sind ' + d3.select(this).data()[0].frequency + ' Autounfälle.';
     displayOnChange();
 
 }
