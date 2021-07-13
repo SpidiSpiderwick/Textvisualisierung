@@ -697,8 +697,6 @@ function displayOnChange(){
     let valueSelected = document.getElementById("select").value;
     let bar = document.getElementById("chartMode").checked;
 
-    console.log(chartMode);
-
     let data = circleSelected.data()[0];
 
     switch (valueSelected){
@@ -722,7 +720,7 @@ function displayOnChange(){
     }
 }
 
-function displayExtraInfo(){
+function circleClicked(){
 
     svg.selectAll("circle").style("fill", "red");
     circleSelected = d3.select(this).style("fill", "blue");
@@ -1107,7 +1105,7 @@ function updateView2(){
         .attr("opacity", opacity)
         .on("mouseover", handleMouseOver)
         .on("mouseout", handleMouseOut)
-        .on("click", displayExtraInfo);
+        .on("click", circleClicked);
 
     pointPositions = [];
     D.forEach(updatePosition);
