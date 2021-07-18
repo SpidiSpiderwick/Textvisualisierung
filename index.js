@@ -471,7 +471,7 @@ function highlightSliderRects(slider, rects, x_invert, startDP, endDP, lowerText
     startDP.setDate(firstDate, true);
     endDP.setDate(lastDate, true);
 
-    lowerText.innerHTML = `${daysBetween(firstDate, lastDate)} days chosen`;
+    lowerText.innerHTML = `${daysBetween(firstDate, lastDate)} Tage ausgewählt`;
 
     rects.attr("fill", function (d, i) { return (d.key >= firstDate && d.key <= lastDate) ? "red" : "steelblue" });
 
@@ -748,7 +748,7 @@ function lumchart(accumulated_data, bar){
     for (var key of Object.keys(count_options).values()) {
         piedata.push({"key": key, "value": count_options[key]});
     }
-    var legende = {1:"Full day", 2:"Twilight or dawn", 3:"Night without public lighting", 4:"Night with public lighting not lit", 5:"Fog", 6:"Night with public lighting on"};
+    var legende = {1:"Tag", 2:"Sonnenauf- oder untergang", 3:"Nacht ohne Beleuchtung", 4:"Nacht mit ausgeschalteter Beleuchtung", 5:"Nebel", 6:"Nacht mit Beleuchtung"};
     var myColor = d3.scaleOrdinal().domain([1,2,3,4,5,6]).range(['#d73027','#fc8d59','#fee08b','#d9ef8b','#91cf60','#1a9850']);
 
     let chart = bar ? barchart : piechart;
@@ -775,7 +775,7 @@ function weatherchart(accumulated_data, bar){
     for (var key of Object.keys(count_options).values()) {
         chartdata.push({"key": key, "value": Number(count_options[key])});
     }
-    var legende = {1:"Normal", 2:"Light rain", 3:"Heavy rain", 4:"Snow", 5:"Fog", 6:"Strong wind", 7:"Dazzling weather", 8:"Cloudy weather", 9:"Other"};
+    var legende = {1:"Normal", 2:"Leichter Regen", 3:"Starker Regen", 4:"Schnee", 5:"Nebel", 6:"Starker Wind", 7:"Grelles Wetter", 8:"Bewölkt", 9:"Sonstige"};
     var myColor = d3.scaleOrdinal().domain([1,2,3,4,5,6,7,8,9]).range(['#e74c3c','#e66b4f','#f39c12','#f1c40f','#16a085','#2ecc71','#3498db','#8e44ad','#2c3e50']);
     var myColor = d3.scaleOrdinal().domain([1,2,3,4,5,6,7,8,9]).range(['#d53e4f','#f46d43','#fdae61','#fee08b','#e6f598','#abdda4','#66c2a5','#3288bd','#ffffbf']);
     var myColor = d3.scaleOrdinal().domain([1,2,3,4,5,6,7,8,9]).range([['#d73027','#f46d43','#fdae61','#fee090','#ffffbf','#e0f3f8','#abd9e9','#74add1','#4575b4']]);
@@ -913,7 +913,7 @@ function injurychart(accumulated_data, bar){
     for (var key of Object.keys(count_options).values()) {
         piedata.push({key: key, value: count_options[key]});
     }
-    var legende = {1:"Unscathed", 2:"Killed", 3:"Hospilalized wounded", 4:"Light injury"};
+    var legende = {1:"Unverletzt", 2:"Getötet", 3:"Schwerverletzt", 4:"Leichtverletzt"};
     var myColor = d3.scaleOrdinal().domain([1,2,3,4]).range(['#1a9850','#d53e4f','#f46d43','#66bd63']);
 
     let chart = bar ? barchart : piechart;
@@ -944,7 +944,7 @@ function pieSurf(accumulated_data, bar){
         piedata.push({"key": key, "value": count_options[key]});
     }
     console.log(piedata);
-    var legende = {1:"Normal", 2:"Wet", 3:"Puddles", 4:"Flooded", 5:"Snow", 6:"Mud", 7:"Icy", 8:"Fat-Oil", 9:"Other"};
+    var legende = {1:"Normal", 2:"Nass", 3:"Pfützen", 4:"Überflutet", 5:"Schnee", 6:"Schlamm", 7:"Eis", 8:"Öl", 9:"Sonstige"};
     var myColor = d3.scaleOrdinal().domain([1,2,3,4,5,6,7,8,9]).range(['#d73027','#f46d43','#fdae61','#fee08b','#d9ef8b','#a6d96a','#66bd63','#1a9850','#ffffbf']);
 
     let chart = bar ? barchart : piechart;

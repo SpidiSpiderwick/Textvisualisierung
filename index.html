@@ -33,14 +33,14 @@
 <header class="w3-container w3-red w3-center" style="padding:50px 16px">
     <h1 class="w3-margin w3-jumbo">Autounfälle in Frankreich</h1>
     <p class="w3-xlarge">by Christopher Penndorf und Asib Kamalsada</p>
-    <input class="w3-animate-input w3-padding-large w3-large w3-margin-top" id="loadFile" type="file">
-    <input id="stLoad" type="button" value="standard load">
+ <!--   <input class="w3-animate-input w3-padding-large w3-large w3-margin-top" id="loadFile" type="file"> -->
+    <input class="w3-button w3-black w3-padding-large w3-large w3-margin-top" id="stLoad" type="button" value="Load Data">
 </header>
 
 <!-- First Grid -->
 <div class="w3-padding-128 w3-container w3-center">
     <div class="w3-twothird w3-center">
-        <h1>Map</h1>
+        <h1>Karte</h1>
         <div class="center" id="mapid"></div>
         <div class="w3-padding-16" id="timelineid">
             <div id="upperText">
@@ -53,9 +53,9 @@
     </div>
 
     <div class="w3-center w3-third" id="extraInfo">
-        <h1>Extra Info</h1>
+        <h1>Extra Information</h1>
         <label id="number"></label>
-        <div class="w3-select"><p>Please select the attribute:</p>
+        <div class="w3-select"><p>Bitte wähle ein Attribut:</p>
             <label>Attribut:
                 <select id="select" name="attributeSel" onchange="displayOnChange()">
                     <option value="1">Wetter</option>
@@ -90,30 +90,28 @@
 </script>
 
 <div id="tooltip" class="hidden">
-    <p><strong>Weather was:</strong>
+    <p><strong>Wetter war:</strong>
     </p>
     <p><span id="value"></span></p>
 </div>
 
 <div id="tooltipInjury" class="hidden">
-    <p><strong>Injury was:</strong>
+    <p><strong>Verletzungsgrad war:</strong>
     </p>
     <p><span id="valueInjury"></span></p>
 </div>
 
 <div id="tooltipLight" class="hidden">
-    <p><strong>The lighting was:</strong>
+    <p><strong>Lichtverhältnisse waren:</strong>
     </p>
     <p><span id="valueLight"></span></p>
 </div>
 
 <div id="tooltipSurf" class="hidden">
-    <p><strong>The surface was:</strong>
+    <p><strong>Untergrund war:</strong>
     </p>
     <p><span id="valueSurf"></span></p>
 </div>
-
-<button class="w3-button w3-black w3-padding-large w3-large w3-margin-top" onclick="loadGeoJson()">Magic</button>
 
 <!-- Second Grid -->
 <div class="w3-row-padding w3-light-grey w3-padding-64 w3-container">
@@ -125,7 +123,7 @@
                 stellt Autounfälle in Frankreich über die Zeit dar. Die Daten bassieren auf einem Datensatz von
                 kaggle.com</h5>
 
-            <p class="w3-text-grey">Hier könnten noch mehr interessante Sachen stehen</p>
+            <p class="w3-text-grey">Es werden generell nur Daten dargestellt, welche auch Geokoordinaten besitzen. Desshalb sind Teilweise Lücken im Zeitverlauf enthalten. Die meisten Daten liegen im Jahr 2016 vor.</p>
         </div>
     </div>
 </div>
